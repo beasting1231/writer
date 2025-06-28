@@ -1,6 +1,7 @@
 import React from 'react';
 import TextSizeControl from './TextSizeControl';
-import { applyFontSize } from '../utils/textFormatting';
+import TextColorPicker from './TextColorPicker';
+import { applyFontSize, applyTextColor } from '../utils/textFormatting';
 
 const Toolbar = ({ executeEditorCommand, editorRef }) => {
   const formatDoc = (command, value = null) => {
@@ -107,6 +108,11 @@ const Toolbar = ({ executeEditorCommand, editorRef }) => {
         <button onClick={() => handleButtonClick(() => formatDoc('bold'))} className="toolbar-button" title="Bold"><b>B</b></button>
         <button onClick={() => handleButtonClick(() => formatDoc('italic'))} className="toolbar-button" title="Italic"><i>I</i></button>
         <button onClick={() => handleButtonClick(() => formatDoc('underline'))} className="toolbar-button" title="Underline"><u>U</u></button>
+        <TextColorPicker onColorChange={(color) => {
+          if (editorRef && editorRef.current) {
+            applyTextColor(editorRef.current, color);
+          }
+        }} />
       </div>
 
       <TextSizeControl onSizeChange={(size) => {

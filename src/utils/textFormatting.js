@@ -57,3 +57,49 @@ export const applyFontSize = (editor, size) => {
   // Trigger input event to update content state
   editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
 };
+
+/**
+ * Apply color to the selected text
+ * @param {HTMLElement} editor - The editor element
+ * @param {string} color - The color to apply (hex code)
+ */
+export const applyTextColor = (editor, color) => {
+  if (!editor) return;
+  
+  const selection = window.getSelection();
+  if (!selection.rangeCount) return;
+  
+  const range = selection.getRangeAt(0);
+  
+  // Check if selection is within the editor
+  if (!editor.contains(range.commonAncestorContainer)) return;
+  
+  // Get the selected text
+  const selectedText = range.toString();
+  if (!selectedText) return;
+  
+  // Create a span with the specified color
+  const span = document.createElement('span');
+  span.style.color = color;
+  
+  // If the range spans multiple nodes, we need to handle it differently
+  if (range.startContainer !== range.endContainer) {
+    // This is a complex selection, use the browser's execCommand as fallback
+    document.execCommand('foreColor', false, color);
+    return;
+  }
+  
+  // Extract the selected text and wrap it in our span
+  range.deleteContents();
+  span.textContent = selectedText;
+  range.insertNode(span);
+  
+  // Update the selection to include the new span
+  selection.removeAllRanges();
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  selection.addRange(newRange);
+  
+  // Trigger input event to update content state
+  editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+};
