@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
+import './Editor.css';
 
-const Editor = ({ content, onContentChange, pageIndex, onEditorFocus }) => {
+const Editor = ({ content, onContentChange, pageIndex, onEditorFocus, isLocked = false }) => {
   const editorRef = useRef(null);
   const isUpdatingRef = useRef(false);
 
@@ -11,6 +12,8 @@ const Editor = ({ content, onContentChange, pageIndex, onEditorFocus }) => {
   }, [content]);
 
   const handleInput = (e) => {
+    if (isLocked) return; // Prevent editing if locked
+    
     if (onContentChange) {
       isUpdatingRef.current = true;
       onContentChange(pageIndex, e.target.innerHTML, editorRef.current);
@@ -30,8 +33,8 @@ const Editor = ({ content, onContentChange, pageIndex, onEditorFocus }) => {
 
   return (
     <div 
-      className="editor"
-      contentEditable="true"
+      className={`editor ${isLocked ? 'locked' : ''}`}
+      contentEditable={!isLocked}
       ref={editorRef}
       onInput={handleInput}
       onFocus={handleFocus}

@@ -57,6 +57,34 @@ body {
   transform: translateY(1px);
 }
 
+.toolbar-select {
+  background-color: #4f4f4f;
+  color: #f0f0f0;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 14px;
+  min-width: 120px;
+}
+
+.toolbar-select:hover {
+  background-color: #666;
+}
+
+.toolbar-select:focus {
+  outline: none;
+  background-color: #666;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.toolbar-select option {
+  background-color: #4f4f4f;
+  color: #f0f0f0;
+  padding: 0.5rem;
+}
+
 .toolbar-group {
   display: flex;
   gap: 0.25rem;
@@ -86,7 +114,6 @@ body {
   box-shadow: 0 0 10px rgba(0,0,0,.5);
   width: 8.27in;
   height: 11.69in;
-  padding: 1in;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -98,38 +125,35 @@ body {
   height: 100%;
   font-size: 16px;
   line-height: 1.6;
+  padding: 1in;
+  flex: 1;
+}
+
+.editor.locked {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background-color: #2a2a2a;
+}
+
+.editor.locked:focus {
+  outline: none;
 }
 
 /* Heading and paragraph styles */
-.editor h1 {
-  font-size: 2em;
-  font-weight: bold;
-  margin: 0.67em 0;
-  color: #f0f0f0;
+.editor h1,
+.editor h2,
+.editor h3,
+.editor h4,
+.editor h5,
+.editor h6 {
+  margin-top: 0;
+  margin-bottom: 0.2em;
 }
 
-.editor h2 {
-  font-size: 1.5em;
-  font-weight: bold;
-  margin: 0.83em 0;
-  color: #f0f0f0;
-}
-
-.editor h3 {
-  font-size: 1.17em;
-  font-weight: bold;
-  margin: 1em 0;
-  color: #f0f0f0;
-}
-
-.editor p {
-  margin: 1em 0;
-  color: #f0f0f0;
-}
-
+.editor p,
 .editor div {
-  margin: 0.5em 0;
-  color: #f0f0f0;
+  margin-top: 0;
+  margin-bottom: 0.2em;
 }
 
 /* Inline formatting styles */
@@ -209,4 +233,8 @@ body {
   #pages-container {
     padding-top: 120px;
   }
+}
+
+.editor, .editor p, .editor h1, .editor h2, .editor h3, .editor h4, .editor h5, .editor h6, .editor div {
+  line-height: 1.6;
 }

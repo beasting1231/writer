@@ -3,16 +3,6 @@ import React from 'react';
 const Toolbar = ({ executeEditorCommand }) => {
   const formatDoc = (command, value = null) => {
     console.log(`Formatting command: ${command} with value: ${value}`);
-    
-    // Special handling for block formatting commands
-    if (['formatBlock'].includes(command)) {
-      // Ensure editor is focused before applying block formatting
-      const editor = document.querySelector('.editor:focus');
-      if (editor) {
-        editor.focus();
-      }
-    }
-    
     executeEditorCommand(command, value);
   };
 
@@ -23,9 +13,18 @@ const Toolbar = ({ executeEditorCommand }) => {
     }
   };
 
+  const handleFontChange = (event) => {
+    const selectedFont = event.target.value;
+    if (selectedFont) {
+      formatDoc('fontName', selectedFont);
+    }
+  };
+
   const handleButtonClick = (action, value = null) => {
-    // Prevent the button from stealing focus
-    action();
+    // Execute the action and prevent default button behavior
+    if (typeof action === 'function') {
+      action();
+    }
   };
 
   return (
@@ -41,6 +40,43 @@ const Toolbar = ({ executeEditorCommand }) => {
             <path fillRule="evenodd" d="M10.707 2.293a1 1 0 010 1.414l-1 1H16a1 1 0 011 1v13a1 1 0 01-1 1H4a1 1 0 01-1-1v-6.293l-1.707 1.707a1 1 0 01-1.414-1.414l7-7a1 1 0 011.414 0zM5 10.707L10 5.707V17H5v-6.293z" clipRule="evenodd"/>
           </svg>
         </button>
+      </div>
+
+      <div className="toolbar-group">
+        <select 
+          onChange={handleFontChange} 
+          className="toolbar-select" 
+          title="Font Family"
+          defaultValue=""
+        >
+          <option value="" disabled>Font</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Arial">Arial</option>
+          <option value="Helvetica">Helvetica</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Trebuchet MS">Trebuchet MS</option>
+          <option value="Impact">Impact</option>
+          <option value="Comic Sans MS">Comic Sans MS</option>
+        </select>
+      </div>
+
+      {/* Line Height Selector */}
+      <div className="toolbar-group">
+        <input
+          type="number"
+          min="1"
+          max="3"
+          step="0.05"
+          defaultValue="1.6"
+          className="toolbar-lineheight-input"
+          title="Line Height"
+          style={{ width: '80px', background: '#4f4f4f', color: '#f0f0f0', border: 'none', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '14px' }}
+          onChange={e => formatDoc('lineHeight', e.target.value)}
+          onBlur={e => formatDoc('lineHeight', e.target.value)}
+          placeholder="Line Height"
+        />
       </div>
 
       <div className="toolbar-group">
