@@ -8,12 +8,7 @@ const Toolbar = ({ executeEditorCommand, editorRef }) => {
     executeEditorCommand(command, value);
   };
 
-  const addLink = () => {
-    const url = prompt('Enter the URL:');
-    if (url) {
-      formatDoc('createLink', url);
-    }
-  };
+  // Link functionality removed as requested
 
   const handleFontChange = (event) => {
     const selectedFont = event.target.value;
@@ -59,12 +54,14 @@ const Toolbar = ({ executeEditorCommand, editorRef }) => {
       <div className="toolbar-group">
         <button onClick={() => handleButtonClick(() => formatDoc('undo'))} className="toolbar-button" title="Undo">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 10.707V17a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1h5.293l-1-1a1 1 0 010-1.414zM15 10.707L10 5.707V17h5v-6.293zM8 17V5.707L3 10.707V17h5z" clipRule="evenodd"/>
+            <path d="M8 5a1 1 0 100 2h5.586l-1.293 1.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L13.586 5H8z" />
+            <path d="M12 15a1 1 0 100-2H6.414l1.293-1.293a1 1 0 10-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L6.414 15H12z" />
           </svg>
         </button>
         <button onClick={() => handleButtonClick(() => formatDoc('redo'))} className="toolbar-button" title="Redo">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10.707 2.293a1 1 0 010 1.414l-1 1H16a1 1 0 011 1v13a1 1 0 01-1 1H4a1 1 0 01-1-1v-6.293l-1.707 1.707a1 1 0 01-1.414-1.414l7-7a1 1 0 011.414 0zM5 10.707L10 5.707V17H5v-6.293z" clipRule="evenodd"/>
+            <path d="M12 5a1 1 0 100 2h-5.586l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 1.414L6.414 5H12z" />
+            <path d="M8 15a1 1 0 100-2h5.586l-1.293-1.293a1 1 0 011.414-1.414l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L14.586 15H8z" />
           </svg>
         </button>
       </div>
@@ -149,13 +146,7 @@ const Toolbar = ({ executeEditorCommand, editorRef }) => {
         </button>
       </div>
 
-      <div className="toolbar-group">
-        <button onClick={() => handleButtonClick(addLink)} className="toolbar-button" title="Add Link">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd"/>
-          </svg>
-        </button>
-      </div>
+      {/* Link button removed as requested */}
     </div>
   );
 };
