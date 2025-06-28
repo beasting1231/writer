@@ -103,23 +103,7 @@ const Toolbar = ({ executeEditorCommand, editorRef }) => {
         </select>
       </div>
 
-      {/* Line Height Selector */}
-      <div className="toolbar-group">
-        <input
-          type="number"
-          min="1"
-          max="3"
-          step="0.05"
-          defaultValue="1.6"
-          className="toolbar-lineheight-input"
-          title="Line Height"
-          style={{ width: '80px', background: '#4f4f4f', color: '#f0f0f0', border: 'none', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '14px' }}
-          onChange={e => formatDoc('lineHeight', e.target.value)}
-          onBlur={e => formatDoc('lineHeight', e.target.value)}
-          placeholder="Line Height"
-        />
-      </div>
-
+      {/* Line Height Selector Removed */}
       <div className="toolbar-group">
         <button onClick={() => handleButtonClick(() => formatDoc('bold'))} className="toolbar-button" title="Bold"><b>B</b></button>
         <button onClick={() => handleButtonClick(() => formatDoc('italic'))} className="toolbar-button" title="Italic"><i>I</i></button>
