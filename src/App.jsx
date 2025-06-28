@@ -207,8 +207,99 @@ function App() {
       console.error("Editor not focused.");
       return;
     }
+    
+    // Save the current selection
+    const selection = window.getSelection();
+    const hasSelection = selection.rangeCount > 0;
+    let range = null;
+    
+    if (hasSelection) {
+      range = selection.getRangeAt(0).cloneRange();
+    }
+    
+    // Focus the editor
     editor.focus();
-
+    
+    // Special handling for fontSize
+    if (command === 'fontSize') {
+      // If there's no selection, try to create one
+      if (!hasSelection || selection.toString().trim() === '') {
+        // If no text is selected, we'll apply to the current cursor position
+        // by creating a temporary span
+        const tempSpan = document.createElement('span');
+        tempSpan.innerHTML = '&#8203;'; // Zero-width space
+        
+        // Insert at cursor position
+        if (range) {
+          range.insertNode(tempSpan);
+          range.selectNode(tempSpan);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
+      
+      try {
+        // Apply the font size
+        document.execCommand('fontSize', false, value);
+        
+        // Trigger input event to update content
+        editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+      } catch (e) {
+        console.error(`Failed to execute fontSize command:`, e);
+      }
+      
+      return;
+    }
+    
+    // Handle list commands
+    if (command === 'insertorderedlist' || command === 'insertunorderedlist') {
+      try {
+        // Check if we're already in a list item
+        const listItem = selection.anchorNode.parentElement.closest('li');
+        const listType = command === 'insertorderedlist' ? 'ol' : 'ul';
+        
+        // If we're already in a list item of the same type, outdent it
+        if (listItem) {
+          const parentList = listItem.parentElement;
+          if (parentList.tagName.toLowerCase() === listType) {
+            document.execCommand('outdent', false);
+            return;
+          } else {
+            // If it's a different list type, convert it
+            const newList = document.createElement(listType);
+            while (listItem.firstChild) {
+              const li = document.createElement('li');
+              li.innerHTML = listItem.innerHTML;
+              newList.appendChild(li);
+              listItem.remove();
+            }
+            parentList.parentNode.insertBefore(newList, parentList);
+            if (parentList.childNodes.length === 0) {
+              parentList.remove();
+            }
+            return;
+          }
+        }
+        
+        // If we're not in a list, create a new one
+        document.execCommand(command, false, null);
+        
+        // Ensure the list has the correct class for styling
+        const lists = editor.getElementsByTagName(listType);
+        if (lists.length > 0) {
+          const lastList = lists[lists.length - 1];
+          lastList.classList.add('editor-list');
+        }
+      } catch (e) {
+        console.error(`Failed to execute ${command}:`, e);
+      }
+      
+      // Trigger input event to update content
+      editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+      return;
+    }
+    
+    // For other commands
     try {
       document.execCommand(command, false, value);
       editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
@@ -266,8 +357,11 @@ function App() {
         setActiveChapterId={setActiveChapterId}
       />
       <div className="flex-1 flex flex-col">
-        <Toolbar executeEditorCommand={executeEditorCommand} />
-        <div ref={pagesContainerRef} className="flex-1 overflow-auto p-8 bg-gray-800">
+        <Toolbar 
+          executeEditorCommand={executeEditorCommand} 
+          editorRef={lastFocusedEditorRef}
+        />
+        <div ref={pagesContainerRef} className="flex-1 overflow-auto p-8 bg-gray-900">
           {pages.map((page, index) => (
             <Page
               key={index}

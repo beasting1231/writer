@@ -58,3 +58,15 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* Custom selection color */
+::selection {
+  background-color: #666666;
+  color: #ffffff;
+}
+
+/* For Firefox */
+::-moz-selection {
+  background-color: #666666;
+  color: #ffffff;
+}

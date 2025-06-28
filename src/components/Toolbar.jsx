@@ -1,6 +1,8 @@
 import React from 'react';
+import TextSizeControl from './TextSizeControl';
+import { applyFontSize } from '../utils/textFormatting';
 
-const Toolbar = ({ executeEditorCommand }) => {
+const Toolbar = ({ executeEditorCommand, editorRef }) => {
   const formatDoc = (command, value = null) => {
     console.log(`Formatting command: ${command} with value: ${value}`);
     executeEditorCommand(command, value);
@@ -23,6 +25,31 @@ const Toolbar = ({ executeEditorCommand }) => {
   const handleButtonClick = (action, value = null) => {
     // Execute the action and prevent default button behavior
     if (typeof action === 'function') {
+      // Save the current selection before executing the action
+      const selection = window.getSelection();
+      const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+      
+      // If we have an editor reference, save the current selection
+      if (editorRef && editorRef.current) {
+        const editor = editorRef.current;
+        if (range && editor.contains(range.commonAncestorContainer)) {
+          // Save the selection relative to the editor
+          const savedRange = range.cloneRange();
+          action();
+          
+          // Restore the selection
+          try {
+            selection.removeAllRanges();
+            selection.addRange(savedRange);
+            editor.focus();
+          } catch (e) {
+            console.error('Error restoring selection:', e);
+          }
+          return;
+        }
+      }
+      
+      // Fallback for when we don't have a valid editor reference
       action();
     }
   };
@@ -47,7 +74,7 @@ const Toolbar = ({ executeEditorCommand }) => {
           onChange={handleFontChange} 
           className="toolbar-select" 
           title="Font Family"
-          defaultValue=""
+          defaultValue="Helvetica"
         >
           <option value="" disabled>Font</option>
           <option value="Georgia">Georgia</option>
@@ -85,12 +112,11 @@ const Toolbar = ({ executeEditorCommand }) => {
         <button onClick={() => handleButtonClick(() => formatDoc('underline'))} className="toolbar-button" title="Underline"><u>U</u></button>
       </div>
 
-      <div className="toolbar-group">
-        <button onClick={() => handleButtonClick(() => formatDoc('formatBlock', 'h1'))} className="toolbar-button" title="Heading 1">H1</button>
-        <button onClick={() => handleButtonClick(() => formatDoc('formatBlock', 'h2'))} className="toolbar-button" title="Heading 2">H2</button>
-        <button onClick={() => handleButtonClick(() => formatDoc('formatBlock', 'h3'))} className="toolbar-button" title="Heading 3">H3</button>
-        <button onClick={() => handleButtonClick(() => formatDoc('formatBlock', 'p'))} className="toolbar-button" title="Paragraph">P</button>
-      </div>
+      <TextSizeControl onSizeChange={(size) => {
+        if (editorRef && editorRef.current) {
+          applyFontSize(editorRef.current, size);
+        }
+      }} />
 
       <div className="toolbar-group">
         <button onClick={() => handleButtonClick(() => formatDoc('justifyleft'))} className="toolbar-button" title="Align Left">
