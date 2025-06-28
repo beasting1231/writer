@@ -1,0 +1,212 @@
+body {
+  font-family: 'Georgia', 'Times New Roman', Times, serif !important;
+  background-color: #1f1f1f !important;
+  color: #f0f0f0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+}
+
+.app-container {
+  display: flex;
+  height: 100vh; /* Full viewport height */
+}
+
+.main-content {
+  flex-grow: 1; /* Takes up remaining space */
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* Enable scrolling for main content if needed */
+}
+
+/* Toolbar Styles */
+.toolbar-container {
+  position: sticky; /* Changed to sticky */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #333;
+  border-bottom: 1px solid #444;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.toolbar-button {
+  background-color: #4f4f4f;
+  color: #f0f0f0;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-button:hover, .toolbar-button.active {
+  background-color: #666;
+}
+
+.toolbar-button:active {
+  transform: translateY(1px);
+}
+
+.toolbar-group {
+  display: flex;
+  gap: 0.25rem;
+  border-right: 1px solid #555;
+  padding-right: 0.75rem;
+  margin-right: 0.75rem;
+}
+
+.toolbar-group:last-child {
+  border-right: none;
+  padding-right: 0;
+  margin-right: 0;
+}
+
+/* Pages Container */
+#pages-container {
+  padding-top: 80px; /* Adjust this if toolbar height changes */
+  padding-bottom: 2rem;
+  padding-left: 20px; /* Add padding to account for sidebar width */
+  padding-right: 20px;
+}
+
+/* Page Styling */
+.page {
+  background: #2c2c2c;
+  margin: 1rem auto;
+  box-shadow: 0 0 10px rgba(0,0,0,.5);
+  width: 8.27in;
+  height: 11.69in;
+  padding: 1in;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor {
+  outline: none;
+  width: 100%;
+  height: 100%;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* Heading and paragraph styles */
+.editor h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0.67em 0;
+  color: #f0f0f0;
+}
+
+.editor h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0.83em 0;
+  color: #f0f0f0;
+}
+
+.editor h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin: 1em 0;
+  color: #f0f0f0;
+}
+
+.editor p {
+  margin: 1em 0;
+  color: #f0f0f0;
+}
+
+.editor div {
+  margin: 0.5em 0;
+  color: #f0f0f0;
+}
+
+/* Inline formatting styles */
+.editor span[style*="font-style: italic"] {
+  font-style: italic !important;
+  color: #f0f0f0;
+}
+
+.editor span[style*="font-weight: bold"] {
+  font-weight: bold !important;
+  color: #f0f0f0;
+}
+
+.editor span[style*="text-decoration: underline"] {
+  text-decoration: underline !important;
+  color: #f0f0f0;
+}
+
+/* Alternative approach - target by style attribute more broadly */
+.editor span {
+  color: #f0f0f0;
+}
+
+.editor span[style*="italic"] {
+  font-style: italic !important;
+}
+
+.editor span[style*="bold"] {
+  font-weight: bold !important;
+}
+
+.editor span[style*="underline"] {
+  text-decoration: underline !important;
+}
+
+/* Enhanced styling for execCommand formatting */
+.editor i, .editor em {
+  font-style: italic !important;
+  color: #f0f0f0;
+  font-weight: 500;
+}
+
+.editor b, .editor strong {
+  font-weight: bold !important;
+  color: #f0f0f0;
+}
+
+.editor u {
+  text-decoration: underline !important;
+  color: #f0f0f0;
+}
+
+/* Message Box */
+#message-box {
+  position: fixed;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  z-index: 1001;
+  transition: top 0.5s ease-in-out;
+  font-size: 1rem;
+}
+
+/* Responsive Styles */
+@media (max-width: 8.5in) {
+  .page {
+    width: 100%;
+    height: auto;
+    min-height: 11in;
+    padding: 1rem;
+  }
+  #pages-container {
+    padding-top: 120px;
+  }
+}

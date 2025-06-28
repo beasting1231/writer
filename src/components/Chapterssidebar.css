@@ -1,0 +1,103 @@
+.chapter-sidebar {
+  width: 250px;
+  padding: 20px;
+  background-color: #252526; /* Slightly darker background for sidebar */
+  border-right: 1px solid #333; /* Subtle border */
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.4); /* More pronounced shadow */
+  height: 100vh;
+  overflow-y: auto;
+  color: #e0e0e0; /* Lighter text for better contrast */
+  padding-top: 80px; /* Account for toolbar height */
+  box-sizing: border-box; /* Include padding in width/height */
+}
+
+.chapter-sidebar h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #f0f0f0;
+  font-size: 1.4em;
+  border-bottom: 1px solid #444;
+  padding-bottom: 10px;
+}
+
+.chapter-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.chapter-item {
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  background-color: #333; /* Darker item background */
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Softer shadow */
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  border: 1px solid transparent; /* For active state border */
+}
+
+.chapter-item:hover {
+  background-color: #444; /* Lighter hover background */
+  transform: translateY(-1px);
+  cursor: pointer;
+}
+
+.chapter-item.active {
+  background-color: #007bff; /* Highlight active chapter */
+  border-color: #007bff;
+  color: white;
+  font-weight: bold;
+}
+
+.chapter-item.active:hover {
+  background-color: #0056b3;
+}
+
+.chapter-item span {
+  flex-grow: 1;
+  padding: 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chapter-item input[type="text"] {
+  flex-grow: 1;
+  padding: 6px;
+  border: 1px solid #666; /* Lighter border for input */
+  border-radius: 4px;
+  font-size: 1em;
+  background-color: #4a4a4a;
+  color: #f0f0f0;
+  outline: none;
+}
+
+.chapter-item input[type="text"]:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.chapter-sidebar button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1em;
+  margin-top: 25px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.chapter-sidebar button:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.chapter-sidebar button:active {
+  transform: translateY(0);
+}
