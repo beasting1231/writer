@@ -10,49 +10,17 @@
 export const applyFontSize = (editor, size) => {
   if (!editor) return;
   
-  const selection = window.getSelection();
-  if (!selection.rangeCount) return;
+  // Use execCommand for simplicity and reliability
+  document.execCommand('fontSize', false, 7); // Use largest size as placeholder
   
-  const range = selection.getRangeAt(0);
-  
-  // Check if selection is within the editor
-  if (!editor.contains(range.commonAncestorContainer)) return;
-  
-  // Get the selected text
-  const selectedText = range.toString();
-  if (!selectedText) return;
-  
-  // Create a span with the specified font size
-  const span = document.createElement('span');
-  span.style.fontSize = `${size}px`;
-  
-  // If the range spans multiple nodes, we need to handle it differently
-  if (range.startContainer !== range.endContainer) {
-    // This is a complex selection, use the browser's execCommand as fallback
-    document.execCommand('fontSize', false, 7); // Use largest size as placeholder
-    
-    // Find all font elements created by execCommand and replace with our custom style
-    const fonts = editor.querySelectorAll('font[size="7"]');
-    fonts.forEach(font => {
-      const newSpan = document.createElement('span');
-      newSpan.style.fontSize = `${size}px`;
-      newSpan.innerHTML = font.innerHTML;
-      font.parentNode.replaceChild(newSpan, font);
-    });
-    
-    return;
-  }
-  
-  // Extract the selected text and wrap it in our span
-  range.deleteContents();
-  span.textContent = selectedText;
-  range.insertNode(span);
-  
-  // Update the selection to include the new span
-  selection.removeAllRanges();
-  const newRange = document.createRange();
-  newRange.selectNodeContents(span);
-  selection.addRange(newRange);
+  // Find all font elements created by execCommand and replace with our custom style
+  const fonts = editor.querySelectorAll('font[size="7"]');
+  fonts.forEach(font => {
+    const newSpan = document.createElement('span');
+    newSpan.style.fontSize = `${size}px`;
+    newSpan.innerHTML = font.innerHTML;
+    font.parentNode.replaceChild(newSpan, font);
+  });
   
   // Trigger input event to update content state
   editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
@@ -66,39 +34,39 @@ export const applyFontSize = (editor, size) => {
 export const applyTextColor = (editor, color) => {
   if (!editor) return;
   
+  // Use execCommand for simplicity and reliability
+  document.execCommand('foreColor', false, color);
+  
+  // Trigger input event to update content state
+  editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+};
+
+/**
+ * Apply highlight to the selected text
+ * @param {HTMLElement} editor - The editor element
+ * @param {string} color - The highlight color to apply (hex code)
+ */
+export const applyHighlight = (editor, color) => {
+  if (!editor) return;
+  
   const selection = window.getSelection();
   if (!selection.rangeCount) return;
   
-  const range = selection.getRangeAt(0);
-  
-  // Check if selection is within the editor
-  if (!editor.contains(range.commonAncestorContainer)) return;
-  
-  // Get the selected text
-  const selectedText = range.toString();
-  if (!selectedText) return;
-  
-  // Create a span with the specified color
-  const span = document.createElement('span');
-  span.style.color = color;
-  
-  // If the range spans multiple nodes, we need to handle it differently
-  if (range.startContainer !== range.endContainer) {
-    // This is a complex selection, use the browser's execCommand as fallback
-    document.execCommand('foreColor', false, color);
-    return;
+  // If we're removing the highlight (white color)
+  if (color === '#ffffff') {
+    // Use execCommand to remove background color
+    document.execCommand('backColor', false, 'transparent');
+  } else {
+    // Use execCommand for highlighting - this works across multiple lines
+    document.execCommand('backColor', false, color);
+    
+    // If we need to adjust text color for readability
+    if (color !== '#ffff00') { // For colors other than yellow
+      document.execCommand('foreColor', false, '#ffffff'); // White text
+    } else {
+      document.execCommand('foreColor', false, '#000000'); // Black text for yellow
+    }
   }
-  
-  // Extract the selected text and wrap it in our span
-  range.deleteContents();
-  span.textContent = selectedText;
-  range.insertNode(span);
-  
-  // Update the selection to include the new span
-  selection.removeAllRanges();
-  const newRange = document.createRange();
-  newRange.selectNodeContents(span);
-  selection.addRange(newRange);
   
   // Trigger input event to update content state
   editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));

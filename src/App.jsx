@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Toolbar from './components/Toolbar';
 import Page from './components/Page';
 import Chapterssidebar from './components/Chapterssidebar';
+import WordCount from './components/WordCount';
 
 function App() {
   const initialChapterContent = {
@@ -348,6 +349,11 @@ function App() {
     });
   };
 
+  // Calculate total content across all pages for word count
+  const totalContent = useMemo(() => {
+    return pages.map(page => page.content).join(' ');
+  }, [pages]);
+
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       <Chapterssidebar
@@ -376,6 +382,8 @@ function App() {
             />
           ))}
         </div>
+        {/* Word count component positioned at the bottom of the screen */}
+        <WordCount content={totalContent} />
       </div>
     </div>
   );

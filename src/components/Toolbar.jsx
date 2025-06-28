@@ -1,7 +1,8 @@
 import React from 'react';
 import TextSizeControl from './TextSizeControl';
 import TextColorPicker from './TextColorPicker';
-import { applyFontSize, applyTextColor } from '../utils/textFormatting';
+import TextHighlighter from './TextHighlighter';
+import { applyFontSize, applyTextColor, applyHighlight } from '../utils/textFormatting';
 
 const Toolbar = ({ executeEditorCommand, editorRef }) => {
   const formatDoc = (command, value = null) => {
@@ -23,20 +24,35 @@ const Toolbar = ({ executeEditorCommand, editorRef }) => {
     if (typeof action === 'function') {
       // Save the current selection before executing the action
       const selection = window.getSelection();
-      const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+      
+      // If there's no selection, just execute the action
+      if (selection.rangeCount === 0) {
+        action();
+        return;
+      }
+      
+      // Save all selected ranges (for multi-line selections)
+      const savedRanges = [];
+      for (let i = 0; i < selection.rangeCount; i++) {
+        savedRanges.push(selection.getRangeAt(i).cloneRange());
+      }
       
       // If we have an editor reference, save the current selection
       if (editorRef && editorRef.current) {
         const editor = editorRef.current;
-        if (range && editor.contains(range.commonAncestorContainer)) {
-          // Save the selection relative to the editor
-          const savedRange = range.cloneRange();
+        
+        // Check if at least one range is within our editor
+        const isSelectionInEditor = savedRanges.some(range => 
+          editor.contains(range.commonAncestorContainer));
+        
+        if (isSelectionInEditor) {
+          // Execute the formatting action
           action();
           
-          // Restore the selection
+          // Restore all saved ranges to maintain the multi-line selection
           try {
             selection.removeAllRanges();
-            selection.addRange(savedRange);
+            savedRanges.forEach(range => selection.addRange(range));
             editor.focus();
           } catch (e) {
             console.error('Error restoring selection:', e);
@@ -111,6 +127,11 @@ const Toolbar = ({ executeEditorCommand, editorRef }) => {
         <TextColorPicker onColorChange={(color) => {
           if (editorRef && editorRef.current) {
             applyTextColor(editorRef.current, color);
+          }
+        }} />
+        <TextHighlighter onHighlightChange={(color) => {
+          if (editorRef && editorRef.current) {
+            applyHighlight(editorRef.current, color);
           }
         }} />
       </div>
