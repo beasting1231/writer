@@ -1,0 +1,68 @@
+.ai-popover {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1a1a1a;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 6px;
+  gap: 8px;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-popover:after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #1a1a1a;
+}
+
+.ai-popover-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.ai-popover-button.discard {
+  background-color: #e53935;
+}
+
+.ai-popover-button.discard:hover {
+  background-color: #f44336;
+}
+
+.ai-popover-button.regenerate {
+  background-color: #555;
+}
+
+.ai-popover-button.regenerate:hover {
+  background-color: #666;
+}
+
+.ai-popover-button.approve {
+  background-color: #4a6da7;
+}
+
+.ai-popover-button.approve:hover {
+  background-color: #5a7db7;
+}

@@ -1,62 +1,112 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './AISidebar.css';
 
-const AISidebar = ({ isVisible, activeAction, selectedText, processedText, isLoading, onApply, onCancel }) => {
+const AISidebar = ({ 
+  isVisible, 
+  activeAction, 
+  selectedText, 
+  processedText, 
+  isLoading, 
+  onApply, 
+  onCancel, 
+  onRegenerate,
+  onGenerateRequest 
+}) => {
   if (!isVisible) return null;
   
-  const getTitle = () => {
-    switch (activeAction) {
-      case 'rewrite':
-        return 'Rewrite with AI';
-      case 'proofread':
-        return 'Proofread with AI';
-      default:
-        return 'AI Assistant';
-    }
+  const [customInstructions, setCustomInstructions] = useState('');
+  const [selectedTone, setSelectedTone] = useState('professional');
+  
+  const title = activeAction === 'rewrite' ? 'Rewrite with AI' : 'Proofread with AI';
+  
+  // Available tone options
+  const toneOptions = [
+    { value: 'professional', label: 'Professional' },
+    { value: 'excited', label: 'Excited' },
+    { value: 'casual', label: 'Casual' },
+    { value: 'formal', label: 'Formal' },
+    { value: 'friendly', label: 'Friendly' }
+  ];
+  
+  // Handle generate button click
+  const handleGenerate = () => {
+    onGenerateRequest(customInstructions, selectedTone);
   };
-
+  
   return (
     <div className="ai-sidebar">
       <div className="ai-sidebar-header">
-        <h2>{getTitle()}</h2>
-        <button className="ai-sidebar-close" onClick={onCancel}>×</button>
+        <h3>{title}</h3>
+        <button className="close-button" onClick={onCancel}>×</button>
       </div>
       
-      <div className="ai-sidebar-content">
-        <div className="ai-sidebar-section">
-          <h3>Original Text</h3>
-          <div className="ai-text-container original">
-            {selectedText && selectedText.trim() ? selectedText : 'No text selected'}
-          </div>
+      <div className="ai-content">
+        <h4>Original Text</h4>
+        <div className="ai-text-container original">
+          {selectedText && selectedText.trim() ? selectedText : 'No text selected'}
         </div>
         
-        <div className="ai-sidebar-section">
-          <h3>{activeAction === 'rewrite' ? 'Rewritten Text' : 'Corrected Text'}</h3>
-          <div className="ai-text-container result">
-            {isLoading ? (
-              <div className="ai-loading">
-                <div className="ai-loading-spinner"></div>
-                <p>Processing with Gemini Flash 2.5...</p>
+        {!processedText && !isLoading && (
+          <div className="ai-customization">
+            <h4>Customize</h4>
+            
+            <div className="tone-selector">
+              <label>Tone:</label>
+              <div className="tone-options">
+                {toneOptions.map(tone => (
+                  <button 
+                    key={tone.value}
+                    className={`tone-button ${selectedTone === tone.value ? 'selected' : ''}`}
+                    onClick={() => setSelectedTone(tone.value)}
+                  >
+                    {tone.label}
+                  </button>
+                ))}
               </div>
-            ) : processedText}
+            </div>
+            
+            <div className="custom-instructions">
+              <label>Custom Instructions (Optional):</label>
+              <textarea 
+                value={customInstructions}
+                onChange={(e) => setCustomInstructions(e.target.value)}
+                placeholder="Add any specific instructions for the AI..."
+              />
+            </div>
+            
+            <button 
+              className="generate-button" 
+              onClick={handleGenerate}
+              disabled={!selectedText || selectedText.trim() === ''}
+            >
+              Generate
+            </button>
           </div>
-        </div>
+        )}
+        
+        {(processedText || isLoading) && (
+          <>
+            <h4>AI Result</h4>
+            <div className="ai-text-container processed">
+              {isLoading ? (
+                <div className="loading-indicator">
+                  <div className="spinner"></div>
+                  <p>Processing with AI...</p>
+                </div>
+              ) : processedText ? processedText : 'AI processed text will appear here'}
+            </div>
+          </>
+        )}
       </div>
       
       <div className="ai-sidebar-footer">
-        <button 
-          className="ai-button secondary" 
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
-        <button 
-          className="ai-button primary" 
-          onClick={onApply}
-          disabled={isLoading || !processedText}
-        >
-          Apply Changes
-        </button>
+        <button className="cancel-button" onClick={onCancel}>Discard</button>
+        {!isLoading && processedText && (
+          <>
+            <button className="regenerate-button" onClick={onRegenerate}>Regenerate</button>
+            <button className="apply-button" onClick={onApply}>Approve</button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -45,6 +45,19 @@
   min-height: 300px;
 }
 
+/* AI preview text styling */
+.ai-preview-text {
+  background-color: rgba(74, 109, 167, 0.1);
+  border-radius: 3px;
+  padding: 0 2px;
+  border-bottom: 2px dashed #4a6da7;
+  transition: all 0.2s ease;
+}
+
+.ai-preview-text:hover {
+  background-color: rgba(74, 109, 167, 0.15);
+}
+
 /* Dynamic font size handling */
 .editor font {
   display: inline;

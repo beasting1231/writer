@@ -5,14 +5,35 @@ const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-
  * Process text with Gemini API
  * @param {string} text - The text to process
  * @param {string} action - Either 'rewrite' or 'proofread'
+ * @param {string} customInstructions - Optional custom instructions
+ * @param {string} tone - Optional tone for rewriting (e.g., 'professional', 'excited')
  * @returns {Promise<string>} - The processed text
  */
-export const processWithGemini = async (text, action) => {
+export const processWithGemini = async (text, action, customInstructions = '', tone = 'professional') => {
   try {
-    // Create a comprehensive prompt with clear instructions
-    const prompt = action === 'rewrite' 
-      ? `You are a writing assistant. Rewrite the following text to be more engaging and clearer. Provide ONLY the rewritten text without any explanations, introductions, or additional commentary. Do not use quotation marks around the text.\n\nText to rewrite: ${text}`
-      : `You are a proofreading assistant. Proofread and correct the following text, fixing any grammar, spelling, and punctuation errors. Provide ONLY the corrected text without any explanations, introductions, or additional commentary. Do not use quotation marks around the text.\n\nText to proofread: ${text}`;
+    // Build the prompt based on action, tone, and custom instructions
+    let prompt;
+    
+    if (action === 'rewrite') {
+      prompt = `You are a writing assistant. Rewrite the following text with a ${tone} tone`;
+      
+      // Add custom instructions if provided
+      if (customInstructions && customInstructions.trim() !== '') {
+        prompt += `. Additional instructions: ${customInstructions}`;
+      }
+      
+      prompt += `. Provide ONLY the rewritten text without any explanations, introductions, or additional commentary. Do not use quotation marks around the text.\n\nText to rewrite: ${text}`;
+    } else {
+      // Proofread action
+      prompt = `You are a proofreading assistant. Proofread and correct the following text, fixing any grammar, spelling, and punctuation errors`;
+      
+      // Add custom instructions if provided
+      if (customInstructions && customInstructions.trim() !== '') {
+        prompt += `. Additional instructions: ${customInstructions}`;
+      }
+      
+      prompt += `. Provide ONLY the corrected text without any explanations, introductions, or additional commentary. Do not use quotation marks around the text.\n\nText to proofread: ${text}`;
+    }
 
     const response = await fetch(`${API_URL}?key=${API_KEY}`, {
       method: 'POST',
