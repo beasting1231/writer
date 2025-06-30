@@ -1,0 +1,48 @@
+.sidebar-toggle {
+  position: fixed;
+  top: 15px;
+  left: 105px;
+  width: 48px;
+  height: 48px;
+  color: #676767;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 101;
+  border: none;
+  background: transparent;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-toggle:hover {
+  transform: scale(1.05);
+}
+
+.sidebar-toggle:active {
+  transform: scale(0.95);
+}
+
+.sidebar-toggle.open {
+  left: 385px;
+}
+
+.toggle-icon {
+  font-size: 24px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+}
+
+/* Specific styling for the back arrow icon when sidebar is open */
+.sidebar-toggle.open .toggle-icon {
+  font-size: 20px; /* Slightly smaller size for the back arrow */
+}

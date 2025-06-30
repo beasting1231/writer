@@ -58,8 +58,8 @@
   width: calc(100% - 120px); /* Prevent horizontal scrolling by limiting width */
   height: 100%;
   min-height: 300px;
-  margin-left: 60px; /* Increased left margin */
-  margin-top: 60px; /* Increased top margin */
+  margin-left: 100px; /* Increased left margin */
+  margin-top: 90px; /* Further increased top margin */
   margin-right: 60px; /* Added right margin */
 }
 

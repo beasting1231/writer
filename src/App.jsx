@@ -1,11 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Editor from './components/Editor/index';
 import WordCount from './components/WordCount';
+import { ChaptersSidebar, SidebarToggle } from './components/Sidebar';
 
 function App() {
   const [content, setContent] = useState('');
+  const [chaptersContent, setChaptersContent] = useState({});
+  const [activeChapterId, setActiveChapterId] = useState(1);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const editorRef = useRef(null);
   const lastFocusedEditorRef = useRef(null);
+  
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen(prev => !prev);
+  }, []);
 
   useEffect(() => {
     setTimeout(() => {
@@ -38,7 +46,25 @@ function App() {
 
   return (
     <div className="flex h-screen bg-black text-white overflow-hidden">
-      <div className="flex-1 flex flex-col max-w-full">
+      {/* Chapters sidebar */}
+      <ChaptersSidebar 
+        isOpen={sidebarOpen}
+        chaptersContent={chaptersContent}
+        setChaptersContent={setChaptersContent}
+        activeChapterId={activeChapterId}
+        setActiveChapterId={setActiveChapterId}
+      />
+      
+      {/* Sidebar toggle button */}
+      <SidebarToggle 
+        isOpen={sidebarOpen} 
+        toggleSidebar={toggleSidebar} 
+      />
+      
+      {/* Main content area that moves with the sidebar */}
+      <div 
+        className={`main-content flex-1 flex flex-col max-w-full transition-transform ${sidebarOpen ? 'sidebar-open' : ''}`}
+      >
         <div className="flex-1 overflow-auto bg-black">
           <div className="canvas-container max-w-full">
             <Editor

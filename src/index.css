@@ -70,3 +70,13 @@ a {
   background-color: #666666;
   color: #ffffff;
 }
+
+/* Main content transition when sidebar opens */
+.main-content {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.main-content.sidebar-open {
+  transform: translateX(280px);
+}

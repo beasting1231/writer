@@ -142,25 +142,48 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
   // Handle keydown events
   const handleKeyDown = useCallback((e) => {
     if (e.key === '/' && !slashCommandMenu.visible) {
-      // Check if cursor is at the start of a line
+      // Get the current selection
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
+        // Get the range and its bounding rectangle
         const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
         
-        // Get the current node and check if it's at the start of a line
-        const node = selection.anchorNode;
-        const offset = selection.anchorOffset;
+        // For empty lines or when getBoundingClientRect() returns zero dimensions
+        // we need to use the caret position instead
+        let rect = range.getBoundingClientRect();
         
-        // Only show slash menu if at start of line or paragraph
-        if (offset === 0 || (node.nodeType === Node.TEXT_NODE && node.textContent.substring(0, offset).trim() === '')) {
-          e.preventDefault(); // Prevent the '/' character from being inserted
+        // Check if we have a valid rect with dimensions
+        if (rect.width === 0 && rect.height === 0) {
+          // Create a temporary span to get the position
+          const span = document.createElement('span');
+          span.innerHTML = '&nbsp;'; // Non-breaking space
           
-          setSlashCommandMenu({
-            visible: true,
-            position: { x: rect.left, y: rect.bottom + 5 }
-          });
+          // Insert the span at the current selection
+          range.insertNode(span);
+          
+          // Get the position of the span
+          rect = span.getBoundingClientRect();
+          
+          // Remove the span
+          span.parentNode.removeChild(span);
+          
+          // Restore the selection
+          selection.removeAllRanges();
+          selection.addRange(range);
         }
+        
+        // Calculate position with a small offset below the cursor
+        const cursorX = rect.left;
+        const cursorY = rect.bottom + 5; // Position below the cursor
+        
+        // Prevent the '/' character from being inserted
+        e.preventDefault();
+        
+        // Show the slash command menu at the cursor position
+        setSlashCommandMenu({
+          visible: true,
+          position: { x: cursorX, y: cursorY }
+        });
       }
     }
   }, [slashCommandMenu.visible]);

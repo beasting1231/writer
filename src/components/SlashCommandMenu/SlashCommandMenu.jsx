@@ -1,14 +1,11 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import './SlashCommandMenu.css';
 
 const SlashCommandMenu = ({ position, onClose, onAction }) => {
   const menuRef = useRef(null);
-
-  // Log position when component mounts or updates
-  useEffect(() => {
-    console.log('SlashCommandMenu received position:', position);
-  }, [position]);
-
+  
+  // Handle click outside to close the menu
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -22,50 +19,29 @@ const SlashCommandMenu = ({ position, onClose, onAction }) => {
     };
   }, [onClose]);
 
+  // Handle menu item click
   const handleAction = (action) => {
     onAction(action);
     onClose();
   };
-
-  // Calculate position to ensure menu is visible within viewport
-  const [menuPosition, setMenuPosition] = useState({ top: position.y, left: position.x });
   
-  // Adjust position to ensure menu stays within viewport boundaries
-  useEffect(() => {
-    if (menuRef.current) {
-      const menuRect = menuRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      
-      // Start with the provided position (now at the beginning of the line)
-      let newTop = position.y;
-      let newLeft = position.x;
-      
-      // Check if menu extends beyond right edge of viewport
-      if (position.x + menuRect.width > viewportWidth) {
-        newLeft = viewportWidth - menuRect.width - 10; // 10px padding from edge
-      }
-      
-      // Check if menu extends beyond bottom edge of viewport
-      if (position.y + menuRect.height > viewportHeight) {
-        newTop = position.y - 10; // Keep at the same vertical position with slight adjustment
-      }
-      
-      setMenuPosition({ top: newTop, left: newLeft });
-    }
-  }, [position]);
-  
-  const menuStyle = {
-    position: 'fixed', // Use fixed positioning relative to viewport
-    top: `${menuPosition.top}px`,
-    left: `${menuPosition.left}px`,
+  // Calculate menu style directly from props without state
+  // This avoids the infinite update loop
+  const getMenuStyle = () => {
+    return {
+      position: 'fixed',
+      top: `${position.y}px`,
+      left: `${position.x}px`,
+      zIndex: 9999
+    };
   };
-
-  return (
+  
+  // Create a portal to render the menu directly in the document body
+  return createPortal(
     <div 
       className="slash-command-menu" 
       ref={menuRef}
-      style={menuStyle}
+      style={getMenuStyle()}
     >
       <div className="slash-command-item" onClick={() => handleAction('heading')}>
         <div className="slash-command-icon">H</div>
@@ -116,7 +92,8 @@ const SlashCommandMenu = ({ position, onClose, onAction }) => {
           <div className="slash-command-shortcut">---</div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
