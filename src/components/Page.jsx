@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import Editor from './Editor';
 import PageHeader from './PageHeader';
 
-const Page = ({ 
+const Page = forwardRef(({ 
   content, 
   onContentChange, 
   pageIndex, 
@@ -11,7 +11,17 @@ const Page = ({
   onDuplicate,
   onDelete,
   onToggleLock
-}) => {
+}, ref) => {
+  const editorRef = useRef(null);
+  
+  // Expose editor methods to parent component
+  useImperativeHandle(ref, () => ({
+    proofreadChapter: () => {
+      if (editorRef.current) {
+        editorRef.current.proofreadChapter();
+      }
+    }
+  }), []);
   return (
     <div className="page">
       <PageHeader
@@ -22,6 +32,7 @@ const Page = ({
         onToggleLock={() => onToggleLock && onToggleLock(pageIndex)}
       />
       <Editor 
+        ref={editorRef}
         content={content}
         onContentChange={onContentChange}
         pageIndex={pageIndex}
@@ -30,6 +41,6 @@ const Page = ({
       />
     </div>
   );
-};
+});
 
 export default Page;

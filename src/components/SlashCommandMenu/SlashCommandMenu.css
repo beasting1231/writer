@@ -1,0 +1,53 @@
+.slash-command-menu {
+  position: fixed; /* Change to fixed positioning */
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  min-width: 220px;
+  z-index: 1000;
+  border: 1px solid #333;
+  overflow: hidden;
+  transform: translate(0, 0); /* Ensure no transform is applied */
+}
+
+.slash-command-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  color: #f0f0f0;
+}
+
+.slash-command-item:hover {
+  background-color: #2a2a2a;
+}
+
+.slash-command-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background-color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-size: 14px;
+}
+
+.slash-command-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slash-command-title {
+  font-size: 14px;
+}
+
+.slash-command-shortcut {
+  font-size: 12px;
+  color: #888;
+  margin-left: 12px;
+}

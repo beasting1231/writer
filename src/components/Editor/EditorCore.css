@@ -1,0 +1,88 @@
+/* Editor Core Styles */
+.editor {
+  width: 100%;
+  min-height: 300px;
+  padding: 20px;
+  outline: none;
+  color: #f0f0f0;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+}
+
+.editor.locked {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.editor p {
+  margin: 0 0 16px;
+  position: relative;
+}
+
+.editor p:empty:before {
+  content: attr(data-placeholder);
+  color: #666;
+  font-style: italic;
+  position: absolute;
+}
+
+.editor h1, .editor h2, .editor h3 {
+  color: #f0f0f0;
+  margin-top: 24px;
+  margin-bottom: 16px;
+}
+
+.editor blockquote {
+  border-left: 4px solid #444;
+  padding-left: 16px;
+  margin-left: 0;
+  color: #ccc;
+  font-style: italic;
+}
+
+.editor ul, .editor ol {
+  padding-left: 24px;
+  margin-bottom: 16px;
+}
+
+.editor img {
+  max-width: 100%;
+  border-radius: 4px;
+  margin: 16px 0;
+}
+
+.editor hr {
+  border: none;
+  height: 1px;
+  background-color: #444;
+  margin: 24px 0;
+}
+
+/* AI Preview Text Styles */
+.ai-preview-text {
+  background-color: rgba(66, 135, 245, 0.1);
+  border-bottom: 1px dashed #4287f5;
+  padding: 0 2px;
+}
+
+/* Proofreading Issue Styles */
+.proofreading-issue {
+  background-color: rgba(255, 87, 87, 0.1);
+  border-bottom: 1px wavy #ff5757;
+  cursor: pointer;
+}
+
+/* Task Checkbox Styles */
+.task-checkbox {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+/* Editor Image Styles */
+.editor-image {
+  max-width: 100%;
+  border-radius: 4px;
+  margin: 16px 0;
+}

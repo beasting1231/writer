@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import './ContextMenu.css';
 
-const ContextMenu = ({ position, onClose, onAction }) => {
+const ContextMenu = ({ position, onClose, onAction, hasSelectedText = true }) => {
   // Store the selected text when the component mounts
   const selectedTextRef = useRef(window.getSelection().toString());
   const menuRef = useRef(null);
@@ -34,13 +34,17 @@ const ContextMenu = ({ position, onClose, onAction }) => {
         left: `${position.x}px` 
       }}
     >
-      <div className="context-menu-item" onClick={() => handleAction('rewrite')}>
-        <div className="context-menu-icon">✏️</div>
-        <span>Re-write with AI</span>
-      </div>
-      <div className="context-menu-item" onClick={() => handleAction('proofread')}>
-        <div className="context-menu-icon">🔍</div>
-        <span>Proofread with AI</span>
+      {hasSelectedText && (
+        <>
+          <div className="context-menu-item" onClick={() => handleAction('rewrite')}>
+            <div className="context-menu-icon">✏️</div>
+            <span>Re-write with AI</span>
+          </div>
+        </>
+      )}
+      <div className="context-menu-item" onClick={() => handleAction('addStickyNote')}>
+        <div className="context-menu-icon">📝</div>
+        <span>Add Sticky Note</span>
       </div>
     </div>
   );
