@@ -43,50 +43,54 @@ const SlashCommandMenu = ({ position, onClose, onAction }) => {
       ref={menuRef}
       style={getMenuStyle()}
     >
-      <div className="slash-command-item" onClick={() => handleAction('heading')}>
-        <div className="slash-command-icon">H</div>
-        <div className="slash-command-content">
-          <div className="slash-command-title">Heading</div>
-          <div className="slash-command-shortcut">#</div>
+      <div className="slash-command-heading-row">
+        <div className="slash-command-heading-item" onClick={() => handleAction('h1')}>
+          <span className="material-symbols-outlined">format_h1</span>
+        </div>
+        <div className="slash-command-heading-item" onClick={() => handleAction('h2')}>
+          <span className="material-symbols-outlined">format_h2</span>
+        </div>
+        <div className="slash-command-heading-item" onClick={() => handleAction('h3')}>
+          <span className="material-symbols-outlined">format_h3</span>
+        </div>
+        <div className="slash-command-heading-item" onClick={() => handleAction('h4')}>
+          <span className="material-symbols-outlined">format_h4</span>
+        </div>
+        <div className="slash-command-heading-item" onClick={() => handleAction('h5')}>
+          <span className="material-symbols-outlined">format_h5</span>
         </div>
       </div>
       <div className="slash-command-item" onClick={() => handleAction('list')}>
-        <div className="slash-command-icon">•</div>
+        <div className="slash-command-icon">
+          <span className="material-icons">format_list_bulleted</span>
+        </div>
         <div className="slash-command-content">
           <div className="slash-command-title">List item</div>
           <div className="slash-command-shortcut">-</div>
         </div>
       </div>
       <div className="slash-command-item" onClick={() => handleAction('task')}>
-        <div className="slash-command-icon">☐</div>
+        <div className="slash-command-icon">
+          <span className="material-icons">check_box_outline_blank</span>
+        </div>
         <div className="slash-command-content">
           <div className="slash-command-title">Task item</div>
           <div className="slash-command-shortcut">[]</div>
         </div>
       </div>
       <div className="slash-command-item" onClick={() => handleAction('blockquote')}>
-        <div className="slash-command-icon">❝</div>
+        <div className="slash-command-icon">
+          <span className="material-icons">format_quote</span>
+        </div>
         <div className="slash-command-content">
           <div className="slash-command-title">Block quote</div>
           <div className="slash-command-shortcut">{">"}</div>
         </div>
       </div>
-      <div className="slash-command-item" onClick={() => handleAction('image')}>
-        <div className="slash-command-icon">🖼️</div>
-        <div className="slash-command-content">
-          <div className="slash-command-title">Image</div>
-          <div className="slash-command-shortcut">/i</div>
-        </div>
-      </div>
-      <div className="slash-command-item" onClick={() => handleAction('gallery')}>
-        <div className="slash-command-icon">🖼️🖼️</div>
-        <div className="slash-command-content">
-          <div className="slash-command-title">ImageGallery</div>
-          <div className="slash-command-shortcut">/g</div>
-        </div>
-      </div>
       <div className="slash-command-item" onClick={() => handleAction('hr')}>
-        <div className="slash-command-icon">—</div>
+        <div className="slash-command-icon">
+          <span className="material-icons">horizontal_rule</span>
+        </div>
         <div className="slash-command-content">
           <div className="slash-command-title">Horizontal rule</div>
           <div className="slash-command-shortcut">---</div>
