@@ -141,52 +141,156 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
   
   // Handle keydown events
   const handleKeyDown = useCallback((e) => {
+    // Close the slash command menu when pressing Enter/Return
+    if ((e.key === 'Enter' || e.key === 'Return') && slashCommandMenu.visible) {
+      e.preventDefault();
+      setSlashCommandMenu({
+        visible: false,
+        position: slashCommandMenu.position
+      });
+      return;
+    }
+    
+    // Close the slash command menu when typing any character except for arrow keys, shift, ctrl, etc.
+    if (slashCommandMenu.visible && 
+        e.key.length === 1 && // Single character keys (letters, numbers, symbols)
+        !e.ctrlKey && !e.metaKey && !e.altKey) {
+      setSlashCommandMenu({
+        visible: false,
+        position: slashCommandMenu.position
+      });
+      // Don't prevent default here so the character gets typed
+    }
+    
+    // Open the slash command menu when typing '/' at the beginning of a line
     if (e.key === '/' && !slashCommandMenu.visible) {
       // Get the current selection
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
-        // Get the range and its bounding rectangle
         const range = selection.getRangeAt(0);
         
-        // For empty lines or when getBoundingClientRect() returns zero dimensions
-        // we need to use the caret position instead
-        let rect = range.getBoundingClientRect();
+        // Check if we're at the beginning of a line
+        const isAtLineStart = isSelectionAtLineStart(selection);
         
-        // Check if we have a valid rect with dimensions
-        if (rect.width === 0 && rect.height === 0) {
-          // Create a temporary span to get the position
-          const span = document.createElement('span');
-          span.innerHTML = '&nbsp;'; // Non-breaking space
+        // Only proceed if we're at the beginning of a line
+        if (isAtLineStart) {
+          // For empty lines or when getBoundingClientRect() returns zero dimensions
+          // we need to use the caret position instead
+          let rect = range.getBoundingClientRect();
           
-          // Insert the span at the current selection
-          range.insertNode(span);
+          // Check if we have a valid rect with dimensions
+          if (rect.width === 0 && rect.height === 0) {
+            // Create a temporary span to get the position
+            const span = document.createElement('span');
+            span.innerHTML = '&nbsp;'; // Non-breaking space
+            
+            // Insert the span at the current selection
+            range.insertNode(span);
+            
+            // Get the position of the span
+            rect = span.getBoundingClientRect();
+            
+            // Remove the span
+            span.parentNode.removeChild(span);
+            
+            // Restore the selection
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
           
-          // Get the position of the span
-          rect = span.getBoundingClientRect();
+          // Calculate position with a small offset below the cursor
+          const cursorX = rect.left;
+          const cursorY = rect.bottom + 5; // Position below the cursor
           
-          // Remove the span
-          span.parentNode.removeChild(span);
+          // Prevent the '/' character from being inserted
+          e.preventDefault();
           
-          // Restore the selection
-          selection.removeAllRanges();
-          selection.addRange(range);
+          // Show the slash command menu at the cursor position
+          setSlashCommandMenu({
+            visible: true,
+            position: { x: cursorX, y: cursorY }
+          });
         }
-        
-        // Calculate position with a small offset below the cursor
-        const cursorX = rect.left;
-        const cursorY = rect.bottom + 5; // Position below the cursor
-        
-        // Prevent the '/' character from being inserted
-        e.preventDefault();
-        
-        // Show the slash command menu at the cursor position
-        setSlashCommandMenu({
-          visible: true,
-          position: { x: cursorX, y: cursorY }
-        });
       }
     }
-  }, [slashCommandMenu.visible]);
+  }, [slashCommandMenu.visible, slashCommandMenu.position]);
+  
+  // Helper function to check if selection is at the beginning of a line
+  const isSelectionAtLineStart = (selection) => {
+    if (!selection || selection.rangeCount === 0) return false;
+    
+    const range = selection.getRangeAt(0);
+    const node = range.startContainer;
+    const offset = range.startOffset;
+    
+    // If we're in a text node
+    if (node.nodeType === Node.TEXT_NODE) {
+      // At the beginning of the text node
+      if (offset === 0) {
+        // Check if there's a BR or block element before this node
+        let currentNode = node;
+        let previousNode = null;
+        
+        // Traverse up to find the nearest block-level parent
+        while (currentNode && currentNode.parentNode) {
+          previousNode = currentNode.previousSibling;
+          
+          // If we found a previous sibling
+          if (previousNode) {
+            // Check if it's a BR or a block element
+            if (previousNode.nodeName === 'BR' || 
+                previousNode.nodeName === 'DIV' || 
+                previousNode.nodeName === 'P') {
+              return true;
+            }
+            
+            // If it's a text node with a newline at the end
+            if (previousNode.nodeType === Node.TEXT_NODE && 
+                previousNode.textContent.endsWith('\n')) {
+              return true;
+            }
+            
+            // Otherwise, we're not at the start of a line
+            return false;
+          }
+          
+          // Move up to parent
+          currentNode = currentNode.parentNode;
+        }
+        
+        // If we've reached the top without finding a previous sibling, we're at the start
+        return true;
+      }
+      
+      // Check if there's a newline character right before the cursor
+      if (offset > 0) {
+        const textBefore = node.textContent.substring(0, offset);
+        return textBefore.endsWith('\n') || textBefore.trim() === '';
+      }
+    }
+    
+    // If we're at the beginning of an element node
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      // If we're at the start of the element
+      if (offset === 0) {
+        return true;
+      }
+      
+      // If we're inside a contentEditable div at the beginning of a line
+      if (node.getAttribute && node.getAttribute('contenteditable') === 'true') {
+        // Check if we're after a BR element
+        const childNodes = Array.from(node.childNodes);
+        if (offset > 0 && childNodes[offset - 1] && 
+            (childNodes[offset - 1].nodeName === 'BR' || 
+             childNodes[offset - 1].nodeName === 'DIV' || 
+             childNodes[offset - 1].nodeName === 'P')) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  };
   
   // Handle closing the slash command menu
   const handleCloseSlashCommandMenu = useCallback(() => {
