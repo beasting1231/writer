@@ -18,7 +18,7 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
 
   // State
   const [isEmpty, setIsEmpty] = useState(true);
-  const [placeholderText] = useState('Start writing...');
+  const [placeholderText] = useState('Type "/" for commands');
   const [slashCommandMenu, setSlashCommandMenu] = useState({ visible: false, position: { x: 0, y: 0 } });
   const [contextMenu, setContextMenu] = useState({ visible: false, position: { x: 0, y: 0 }, hasSelectedText: false });
   const [selectedText, setSelectedText] = useState('');
@@ -37,13 +37,17 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
   });
   const [proofreadingIssues, setProofreadingIssues] = useState([]);
 
-  // Check if editor is empty and handle placeholders
-  // Check if editor is empty and handle placeholders
+  // Check if editor is empty
   const checkIfEmpty = useCallback(() => {
-    if (!editorRef.current) return;
+    console.log('Checking if editor is empty');
+    if (!editorRef.current) {
+      console.log('Editor ref is null, cannot check if empty');
+      return;
+    }
 
     const editorContent = editorRef.current.innerText.trim();
     const nowEmpty = editorContent.length === 0;
+    console.log('Editor content length:', editorContent.length, 'Empty:', nowEmpty);
 
     // By using the functional update form of setState, we can get the previous
     // state without having to list `isEmpty` as a dependency of `useCallback`.
@@ -51,29 +55,169 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
     // which prevents the infinite loop in the `useEffect` that uses it.
     setIsEmpty(prevIsEmpty => {
       if (prevIsEmpty !== nowEmpty) {
+        console.log('Empty state changed from', prevIsEmpty, 'to', nowEmpty);
         return nowEmpty;
       }
       return prevIsEmpty;
     });
   }, []); // Empty dependency array makes this function stable
 
+const updateActivePlaceholder = useCallback(() => {
+    console.log('--- updateActivePlaceholder START ---');
+    if (!editorRef.current) {
+      console.log('Editor ref is null, exiting');
+      return;
+    }
+    
+    // First, ensure the editor has at least one paragraph if it's empty
+    if (editorRef.current.innerHTML.trim() === '') {
+      console.log('Editor is completely empty, adding initial paragraph');
+      editorRef.current.innerHTML = '<p><br></p>';
+    }
+    
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      console.log('No selection or range, exiting');
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    console.log('Selection range:', {
+      startContainer: range.startContainer.nodeName,
+      startOffset: range.startOffset,
+      endContainer: range.endContainer.nodeName,
+      endOffset: range.endOffset,
+      collapsed: range.collapsed
+    });
+
+    // Find the nearest block element (P or DIV) within the editor
+    let node = range.startContainer;
+    console.log('Initial node:', node.nodeName, 'nodeType:', node.nodeType);
+    
+    // If we're in a text node, we need to get its parent
+    if (node.nodeType === Node.TEXT_NODE) {
+      console.log('Node is a text node, content:', JSON.stringify(node.textContent));
+      node = node.parentNode;
+    }
+    
+    // Continue traversing up until we find a P or DIV
+    while (node && node !== editorRef.current && !(node.nodeName === 'P' || node.nodeName === 'DIV')) {
+      console.log('Traversing up from', node.nodeName, 'to', node.parentNode ? node.parentNode.nodeName : 'null');
+      node = node.parentNode;
+    }
+    
+    // If we didn't find a suitable block element, create one
+    if (!node || node === editorRef.current) {
+      console.log('No suitable block element found, creating one');
+      const p = document.createElement('p');
+      p.innerHTML = '<br>';
+      
+      // Insert at cursor position
+      range.deleteContents();
+      range.insertNode(p);
+      
+      // Set the node to our new paragraph
+      node = p;
+      
+      // Move cursor into the paragraph
+      const newRange = document.createRange();
+      newRange.setStart(p, 0);
+      newRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    }
+    
+    console.log('Found containing block:', node ? node.nodeName : 'null');
+    if (node) {
+      console.log('Block content:', JSON.stringify(node.innerText));
+      console.log('Block HTML:', JSON.stringify(node.innerHTML));
+      console.log('Is empty?', node.innerText.trim() === '' || node.innerHTML === '<br>' || node.innerHTML === '');
+    }
+
+    // Log all elements with placeholders before removing
+    console.log('Elements with placeholders before clearing:');
+    editorRef.current.querySelectorAll('[data-placeholder]').forEach((el, i) => {
+      console.log(`Element ${i}:`, el.nodeName, 'placeholder:', el.getAttribute('data-placeholder'));
+    });
+
+    // Remove placeholders from all blocks
+    editorRef.current.querySelectorAll('[data-placeholder]').forEach(el => {
+      console.log('Removing placeholder from:', el.nodeName);
+      el.removeAttribute('data-placeholder');
+    });
+
+    // Add placeholder only to the active block/line if it is empty
+    if (node && node !== editorRef.current && (node.innerText.trim() === '' || node.innerHTML === '<br>' || node.innerHTML === '')) {
+      console.log('Adding placeholder to node:', node.nodeName);
+      
+      // Check if this is the first paragraph in the editor
+      const isFirstParagraph = isNodeFirstParagraph(node);
+      console.log('Is first paragraph:', isFirstParagraph);
+      
+      // Use different placeholder text for first paragraph
+      const placeholderText = isFirstParagraph ? 'Start writing...' : 'Type "/" for commands';
+      node.setAttribute('data-placeholder', placeholderText);
+    } else {
+      console.log('Not adding placeholder because:', {
+        nodeExists: !!node,
+        isEditorRef: node === editorRef.current,
+        isEmpty: node ? (node.innerText.trim() === '' || node.innerHTML === '<br>' || node.innerHTML === '') : false
+      });
+    }
+    
+    // Log all elements with placeholders after adding
+    console.log('Elements with placeholders after update:');
+    editorRef.current.querySelectorAll('[data-placeholder]').forEach((el, i) => {
+      console.log(`Element ${i}:`, el.nodeName, 'placeholder:', el.getAttribute('data-placeholder'));
+    });
+    
+    console.log('--- updateActivePlaceholder END ---');
+  }, []);
+  
+  // Helper function to check if a node is the first paragraph in the editor
+  const isNodeFirstParagraph = useCallback((node) => {
+    if (!node || !editorRef.current) return false;
+    
+    // Get all block elements in the editor
+    const blocks = Array.from(editorRef.current.querySelectorAll('p, div'));
+    
+    // If there are no blocks or this is the first block
+    return blocks.length === 0 || node === blocks[0];
+  }, []);
+
   // Handle input events
   const handleInput = useCallback((e) => {
-    if (isLocked || isUpdatingRef.current) return;
+    console.log('Input event detected');
+    // Update placeholders on any input change
+    console.log('Editor HTML before updateActivePlaceholder:', editorRef.current.innerHTML);
+    
+    // Delay the placeholder update slightly to ensure the DOM is updated
+    setTimeout(() => {
+      updateActivePlaceholder();
+    }, 0);
+    
+    if (isLocked || isUpdatingRef.current) {
+      console.log('Editor is locked or updating, skipping content change');
+      return;
+    }
     
     checkIfEmpty();
     
     if (onContentChange) {
+      console.log('Calling onContentChange');
       onContentChange(pageIndex, editorRef.current.innerHTML);
     }
-  }, [checkIfEmpty, isLocked, onContentChange, pageIndex]);
+  }, [checkIfEmpty, isLocked, onContentChange, pageIndex, updateActivePlaceholder]);
 
   // Handle focus events
   const handleFocus = useCallback((e) => {
+    console.log('Editor focused');
     if (onEditorFocus) {
       onEditorFocus(editorRef.current);
     }
-  }, [onEditorFocus]);
+    // Update placeholder when editor is focused
+    updateActivePlaceholder();
+  }, [onEditorFocus, updateActivePlaceholder]);
   
   // Save current selection
   const saveSelection = useCallback(() => {
@@ -95,30 +239,53 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
     return false;
   }, []);
   
-  // Handle selection change
+
   const handleSelectionChange = useCallback(() => {
+    console.log('--- handleSelectionChange START ---');
     // If the selection is changing due to a programmatic update, we reset the
     // flag and ignore the event. This is the key to breaking the infinite loop.
     if (isUpdatingRef.current) {
+      console.log('isUpdatingRef is true, resetting and ignoring event');
       isUpdatingRef.current = false;
       return;
     }
     
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
+    if (!selection || selection.rangeCount === 0) {
+      console.log('No selection or range, exiting handleSelectionChange');
+      return;
+    }
     
     const range = selection.getRangeAt(0);
+    console.log('Selection range in handleSelectionChange:', {
+      startContainer: range.startContainer.nodeName,
+      startOffset: range.startOffset,
+      endContainer: range.endContainer.nodeName,
+      endOffset: range.endOffset,
+      collapsed: range.collapsed
+    });
     
     // Check if selection is within editor
-    if (!editorRef.current.contains(range.commonAncestorContainer)) return;
+    if (!editorRef.current.contains(range.commonAncestorContainer)) {
+      console.log('Selection is outside editor, exiting handleSelectionChange');
+      return;
+    }
     
     // Save the selection
+    console.log('Saving selection');
     saveSelection();
+
+    // Update placeholders so only the active empty block shows the hint
+    console.log('Calling updateActivePlaceholder from handleSelectionChange');
+    updateActivePlaceholder();
     
     // Get selected text
     const text = selection.toString();
+    console.log('Selected text:', JSON.stringify(text));
     setSelectedText(text);
-  }, [saveSelection]);
+
+    console.log('--- handleSelectionChange END ---');
+  }, [saveSelection, updateActivePlaceholder]);
   
   // Handle context menu
   const handleContextMenu = useCallback((e) => {
@@ -824,50 +991,86 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
         saveSelection();
         editorRef.current.innerHTML = content || '';
         restoreSelection();
+        updateActivePlaceholder();
         // The flag is now left `true` and will be reset by `handleSelectionChange`.
       }
     }
-  }, [content, saveSelection, restoreSelection]);
+  }, [content, saveSelection, restoreSelection, updateActivePlaceholder]);
 
   // Set up selection change listener
   useEffect(() => {
     const handleDocSelectionChange = () => {
+      console.log('Selection change detected');
       handleSelectionChange();
+      updateActivePlaceholder();
     };
 
+    console.log('Adding selectionchange event listener');
     document.addEventListener('selectionchange', handleDocSelectionChange);
     return () => {
+      console.log('Removing selectionchange event listener');
       document.removeEventListener('selectionchange', handleDocSelectionChange);
     };
   }, [handleSelectionChange]);
   
   // Apply default font when editor is initialized and set up mutation observer
   useEffect(() => {
+    console.log('Editor initialization effect running');
     if (editorRef.current) {
+      console.log('Editor ref exists, initializing');
       // Set default font to Helvetica
       editorRef.current.style.fontFamily = 'Helvetica, Arial, sans-serif';
       
+      // Initialize with a paragraph if empty
+      if (editorRef.current.innerHTML.trim() === '') {
+        console.log('Editor is empty on init, adding initial paragraph');
+        editorRef.current.innerHTML = '<p><br></p>';
+      }
+      
       // Set up a mutation observer to detect when new paragraphs are added
       const observer = new MutationObserver((mutations) => {
+        console.log('Mutation detected:', mutations.length, 'mutations');
+        let shouldUpdatePlaceholder = false;
+        
         mutations.forEach((mutation) => {
+          console.log('Mutation type:', mutation.type);
           if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            console.log('Added nodes:', mutation.addedNodes.length);
             // Check for newly added paragraphs
             mutation.addedNodes.forEach((node) => {
-              if (node.nodeName === 'P' && !node.hasAttribute('data-placeholder')) {
-                node.setAttribute('data-placeholder', 'Type "/" for commands');
-              }
+              console.log('Added node:', node.nodeName);
             });
+            shouldUpdatePlaceholder = true;
+          } else if (mutation.type === 'characterData') {
+            console.log('Character data changed');
+            shouldUpdatePlaceholder = true;
           }
         });
+        
+        // Only update placeholders if relevant mutations occurred
+        if (shouldUpdatePlaceholder) {
+          console.log('Calling updateActivePlaceholder after mutation');
+          updateActivePlaceholder();
+        }
       });
       
       // Start observing the editor for changes
-      observer.observe(editorRef.current, { childList: true, subtree: true });
+      console.log('Starting mutation observer');
+      observer.observe(editorRef.current, { childList: true, subtree: true, characterData: true });
+
+      // Ensure the correct placeholder is shown on initial mount
+      console.log('Initial updateActivePlaceholder call');
+      updateActivePlaceholder();
       
       // Clean up the observer when component unmounts
-      return () => observer.disconnect();
+      return () => {
+        console.log('Disconnecting mutation observer');
+        observer.disconnect();
+      };
+    } else {
+      console.log('Editor ref does not exist yet');
     }
-  }, []);
+  }, [updateActivePlaceholder]);
 
   // Expose methods to parent components
   useImperativeHandle(ref, () => ({
@@ -887,8 +1090,11 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         onContextMenu={handleContextMenu}
+        onClick={() => {
+          console.log('Editor clicked, updating placeholder');
+          updateActivePlaceholder();
+        }}
         suppressContentEditableWarning={true}
-        data-placeholder={placeholderText}
       />
       
       {/* Context Menu */}

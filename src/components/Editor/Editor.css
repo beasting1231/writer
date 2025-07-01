@@ -22,10 +22,12 @@
   left: 20px;
 }
 
-/* Style for paragraph placeholders - show on all empty paragraphs */
-.editor p:empty::before,
-.editor p:has(br:only-child)::before {
-  content: 'Type "/" for commands';
+/* Style for paragraph placeholders - only show on elements with data-placeholder attribute */
+.editor p[data-placeholder]:empty::before,
+.editor p[data-placeholder]:has(br:only-child)::before,
+.editor div[data-placeholder]:empty::before,
+.editor div[data-placeholder]:has(br:only-child)::before {
+  content: attr(data-placeholder);
   color: #666;
   pointer-events: none;
   position: absolute;
