@@ -5,6 +5,7 @@ import ContextMenu from '../ContextMenu/ContextMenu';
 import AISidebar from '../AISidebar';
 import AIPopover from '../AIPopover';
 import { processWithGemini } from '../../utils/geminiApi';
+import { normalizeHTML } from '../../utils/domUtils';
 
 /**
  * Main Editor component that integrates all editor functionality
@@ -37,29 +38,35 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
   const [proofreadingIssues, setProofreadingIssues] = useState([]);
 
   // Check if editor is empty and handle placeholders
+  // Check if editor is empty and handle placeholders
   const checkIfEmpty = useCallback(() => {
     if (!editorRef.current) return;
-    
+
     const editorContent = editorRef.current.innerText.trim();
-    const wasEmpty = isEmpty;
     const nowEmpty = editorContent.length === 0;
-    
-    if (wasEmpty !== nowEmpty) {
-      setIsEmpty(nowEmpty);
-    }
-  }, [isEmpty]);
+
+    // By using the functional update form of setState, we can get the previous
+    // state without having to list `isEmpty` as a dependency of `useCallback`.
+    // This makes `checkIfEmpty` a stable function across re-renders,
+    // which prevents the infinite loop in the `useEffect` that uses it.
+    setIsEmpty(prevIsEmpty => {
+      if (prevIsEmpty !== nowEmpty) {
+        return nowEmpty;
+      }
+      return prevIsEmpty;
+    });
+  }, []); // Empty dependency array makes this function stable
 
   // Handle input events
   const handleInput = useCallback((e) => {
-    if (isLocked) return;
+    if (isLocked || isUpdatingRef.current) return;
     
     checkIfEmpty();
     
-    // Update content if not being updated by AI
-    if (!isUpdatingRef.current && onContentChange) {
-      onContentChange(e, editorRef.current.innerHTML);
+    if (onContentChange) {
+      onContentChange(pageIndex, editorRef.current.innerHTML);
     }
-  }, [checkIfEmpty, isLocked, onContentChange]);
+  }, [checkIfEmpty, isLocked, onContentChange, pageIndex]);
 
   // Handle focus events
   const handleFocus = useCallback((e) => {
@@ -90,7 +97,12 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
   
   // Handle selection change
   const handleSelectionChange = useCallback(() => {
-    if (isUpdatingRef.current) return;
+    // If the selection is changing due to a programmatic update, we reset the
+    // flag and ignore the event. This is the key to breaking the infinite loop.
+    if (isUpdatingRef.current) {
+      isUpdatingRef.current = false;
+      return;
+    }
     
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
@@ -205,6 +217,9 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
           // Prevent the '/' character from being inserted
           e.preventDefault();
           
+          // Save the current caret position to restore later
+          saveSelection();
+          
           // Show the slash command menu at the cursor position
           setSlashCommandMenu({
             visible: true,
@@ -213,7 +228,7 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
         }
       }
     }
-  }, [slashCommandMenu.visible, slashCommandMenu.position]);
+  }, [slashCommandMenu.visible, slashCommandMenu.position, saveSelection]);
   
   // Helper function to check if selection is at the beginning of a line
   const isSelectionAtLineStart = (selection) => {
@@ -678,6 +693,9 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
     // Focus the editor
     editorRef.current.focus();
     
+    // Restore the saved caret position
+    restoreSelection();
+    
     // Get current selection
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
@@ -690,10 +708,14 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
     
     // Handle different actions
     switch (action) {
-      case 'heading':
-        // Insert a heading element
-        const heading = document.createElement('h2');
-        heading.setAttribute('data-placeholder', 'Heading');
+      case 'h1':
+      case 'h2':
+      case 'h3':
+      case 'h4':
+      case 'h5':
+        // Insert a heading element of the specified level
+        const headingLevel = action; // h1, h2, h3, h4, or h5
+        const heading = document.createElement(headingLevel);
         heading.innerHTML = '<br>';
         range.insertNode(heading);
         
@@ -736,6 +758,27 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
         selection.addRange(range);
         break;
         
+      case 'hr':
+        // Insert a horizontal rule
+        const hr = document.createElement('hr');
+        range.insertNode(hr);
+        
+        // Insert a new paragraph after the horizontal rule for continued typing
+        const pAfterHr = document.createElement('p');
+        pAfterHr.innerHTML = '<br>';
+        if (hr.nextSibling) {
+          hr.parentNode.insertBefore(pAfterHr, hr.nextSibling);
+        } else {
+          hr.parentNode.appendChild(pAfterHr);
+        }
+        
+        // Move cursor into the new paragraph
+        range.setStart(pAfterHr, 0);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        break;
+
       case 'blockquote':
         // Insert a blockquote
         const blockquote = document.createElement('blockquote');
@@ -761,29 +804,30 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
     if (onContentChange) {
       onContentChange({ type: 'slashCommand', action }, editorRef.current.innerHTML);
     }
-  }, [handleCloseSlashCommandMenu, onContentChange]);
+  }, [handleCloseSlashCommandMenu, restoreSelection, onContentChange]);
 
-  // Initialize editor content
+  // Sync content from props
   useEffect(() => {
-    if (editorRef.current && content !== undefined && !isUpdatingRef.current) {
-      // Only update if content has changed
-      if (editorRef.current.innerHTML !== content) {
+    if (editorRef.current) {
+      // To prevent infinite loops, we compare normalized versions of the HTML.
+      // Browsers can change the innerHTML string (e.g., add <br> tags), causing
+      // a strict comparison to fail even when the content is semantically the same.
+      const normalizedDOM = normalizeHTML(editorRef.current.innerHTML);
+      const normalizedContent = normalizeHTML(content);
+
+      if (normalizedDOM !== normalizedContent) {
+        // Set a flag to signal a programmatic update. The `handleSelectionChange`
+        // event handler will see this flag, reset it, and ignore the event, which
+        // is the key to preventing the infinite re-render loop.
+        isUpdatingRef.current = true;
+
+        saveSelection();
         editorRef.current.innerHTML = content || '';
-        // Check if editor is empty after content update
-        checkIfEmpty();
-        
-        // Initialize placeholders for paragraphs
-        setTimeout(() => {
-          const paragraphs = editorRef.current.querySelectorAll('p');
-          paragraphs.forEach(para => {
-            if (!para.hasAttribute('data-placeholder')) {
-              para.setAttribute('data-placeholder', 'Type "/" for commands');
-            }
-          });
-        }, 0);
+        restoreSelection();
+        // The flag is now left `true` and will be reset by `handleSelectionChange`.
       }
     }
-  }, [content, checkIfEmpty]);
+  }, [content, saveSelection, restoreSelection]);
 
   // Set up selection change listener
   useEffect(() => {

@@ -212,389 +212,330 @@ const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus,
   };
 
   const handleSlashCommandAction = (action) => {
-    // Remove the slash character that triggered the menu
-    if (editorRef.current) {
-      const content = editorRef.current.innerHTML;
-      const lastSlashIndex = content.lastIndexOf('/');
-      if (lastSlashIndex !== -1) {
-        const newContent = content.substring(0, lastSlashIndex) + content.substring(lastSlashIndex + 1);
-        editorRef.current.innerHTML = newContent;
-      }
-    }
-    
-    // Apply the selected command
-    switch (action) {
-      case 'heading':
-        document.execCommand('formatBlock', false, '<h1>');
-        break;
-      case 'list':
-        document.execCommand('insertUnorderedList', false, null);
-        break;
-      case 'task':
-        // Insert a checkbox
-        document.execCommand('insertHTML', false, '<div><input type="checkbox"> Task</div>');
-        break;
-      case 'blockquote':
-        document.execCommand('formatBlock', false, '<blockquote>');
-        break;
-      case 'image':
-        // Placeholder for image insertion
-        document.execCommand('insertHTML', false, '<div class="image-placeholder">[Image]</div>');
-        break;
-      case 'gallery':
-        // Placeholder for gallery insertion
-        document.execCommand('insertHTML', false, '<div class="gallery-placeholder">[Image Gallery]</div>');
-        break;
-      case 'hr':
-        document.execCommand('insertHorizontalRule', false, null);
-        break;
-      default:
-        break;
-    }
-    
-    // Update content
-    if (onContentChange) {
-      onContentChange(pageIndex, editorRef.current.innerHTML, editorRef.current);
-    }
-  };
-
-  const handleContextMenuAction = (action, capturedText) => {
-    // Close the context menu
-    setContextMenu({ ...contextMenu, visible: false });
-    
-    if (action === 'addStickyNote') {
-      // Calculate position relative to the editor element
-      const editorRect = editorRef.current.getBoundingClientRect();
-      const relativePosition = {
-        x: contextMenu.position.x - editorRect.left,
-        y: contextMenu.position.y - editorRect.top + editorRef.current.scrollTop
-      };
-      
-      // Add a new sticky note at the context menu position with page index
-      const newNote = {
-        id: Date.now().toString(),
-        position: relativePosition,
-        pageIndex: pageIndex
-      };
-      setStickyNotes([...stickyNotes, newNote]);
-      return;
-    }
-    
-    // Use the captured text passed from the context menu
-    const textToProcess = capturedText || selectedText;
+    if (!editorRef.current) return;
     
     // Get the current selection
     const selection = window.getSelection();
-    if (selection.rangeCount === 0) return;
+    if (!selection.rangeCount) return;
     
     const range = selection.getRangeAt(0);
+    const startNode = range.startContainer;
     
-    // Store a more complete representation of the range
-    const rangeInfo = {
-      startOffset: range.startOffset,
-      endOffset: range.endOffset,
-      startContainer: range.startContainer,
-      endContainer: range.endContainer,
-      selectedText: textToProcess,
-      // Store the parent element to help with positioning later
-      parentElement: range.commonAncestorContainer.nodeType === 3 ? 
-                     range.commonAncestorContainer.parentElement : 
-                     range.commonAncestorContainer
+    // Find the current block element
+    let currentBlock = startNode;
+    while (currentBlock && currentBlock !== editorRef.current) {
+      if (currentBlock.nodeType !== Node.TEXT_NODE) {
+        break;
+      }
+      currentBlock = currentBlock.parentNode;
+    }
+    
+    // If we're in a text node, get its parent block
+    if (currentBlock.nodeType === Node.TEXT_NODE) {
+      currentBlock = currentBlock.parentNode;
+    }
+    
+    // Get the content and remove the slash
+    const content = currentBlock.textContent;
+    const slashIndex = content.lastIndexOf('/');
+    if (slashIndex === -1) return;
+    
+    const newContent = content.substring(0, slashIndex) + content.substring(slashIndex + 1);
+    
+    // Create a temporary div to hold the editor's content
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = editorRef.current.innerHTML;
+    
+    // Find and update the corresponding block in our temporary div
+    const blocks = tempDiv.childNodes;
+    let targetBlock = null;
+    let targetIndex = -1;
+    
+    for (let i = 0; i < blocks.length; i++) {
+      if (blocks[i].textContent === content) {
+        targetBlock = blocks[i];
+        targetIndex = i;
+        break;
+      }
+    }
+    
+    if (!targetBlock) return;
+    
+    // Create the new element based on the action
+    let newElement;
+    switch (action) {
+      case 'h1':
+      case 'h2':
+      case 'h3':
+      case 'h4':
+      case 'h5':
+        newElement = document.createElement(action);
+        newElement.textContent = newContent;
+        break;
+      case 'blockquote':
+        newElement = document.createElement('blockquote');
+        newElement.textContent = newContent;
+        break;
+      case 'list': {
+        const listDiv = document.createElement('div');
+        listDiv.innerHTML = `<ul><li>${newContent}</li></ul>`;
+        newElement = listDiv.firstChild;
+        break;
+      }
+      case 'task': {
+        const taskDiv = document.createElement('div');
+        taskDiv.innerHTML = `<div><input type="checkbox"> ${newContent}</div>`;
+        newElement = taskDiv.firstChild;
+        break;
+      }
+      case 'image': {
+        newElement = document.createElement('div');
+        newElement.className = 'image-placeholder';
+        newElement.textContent = '[Image]';
+        break;
+      }
+      case 'gallery': {
+        newElement = document.createElement('div');
+        newElement.className = 'gallery-placeholder';
+        newElement.textContent = '[Image Gallery]';
+        break;
+      }
+      case 'hr':
+        newElement = document.createElement('hr');
+        break;
+      default:
+        return;
+    }
+    
+      
+      // Show slash command menu at cursor position
+      setSlashCommandMenu({
+        visible: true,
+        position: { x: rect.left, y: rect.bottom + 5 }
+      });
+    }
+  }
+  
+  if (onContentChange) {
+    isUpdatingRef.current = true;
+    onContentChange(pageIndex, e.target.innerHTML, editorRef.current);
+    // Reset the flag after a short delay to allow for formatting operations
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+    }, 100);
+  }
+};
+
+const handleFocus = (e) => {
+  console.log("Editor focused", pageIndex);
+  if (onEditorFocus) {
+    onEditorFocus(editorRef.current);
+  }
+  // Check if editor is empty when focused
+  checkIfEmpty();
+};
+
+const handleContextMenu = (e) => {
+  e.preventDefault();
+  const hasText = selectedText.trim().length > 0;
+  
+  setContextMenu({
+    visible: true,
+    position: { x: e.clientX, y: e.clientY },
+    hasSelectedText: hasText
+  });
+};
+
+const handleCloseContextMenu = () => {
+  setContextMenu(prev => ({ ...prev, visible: false }));
+};
+
+const handleCloseSlashCommandMenu = () => {
+  setSlashCommandMenu(prev => ({ ...prev, visible: false }));
+};
+
+const handleSlashCommandAction = (action) => {
+  if (!editorRef.current) return;
+  
+  // Get the current selection
+  const selection = window.getSelection();
+  if (!selection.rangeCount) return;
+  
+  const range = selection.getRangeAt(0);
+  const startNode = range.startContainer;
+  
+  // Find the current block element
+  let currentBlock = startNode;
+  while (currentBlock && currentBlock !== editorRef.current) {
+    if (currentBlock.nodeType !== Node.TEXT_NODE) {
+      break;
+    }
+    currentBlock = currentBlock.parentNode;
+  }
+  
+  // If we're in a text node, get its parent block
+  if (currentBlock.nodeType === Node.TEXT_NODE) {
+    currentBlock = currentBlock.parentNode;
+  }
+  
+  // Get the content and remove the slash
+  const content = currentBlock.textContent;
+  const slashIndex = content.lastIndexOf('/');
+  if (slashIndex === -1) return;
+  
+  const newContent = content.substring(0, slashIndex) + content.substring(slashIndex + 1);
+  
+  // Create a temporary div to hold the editor's content
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = editorRef.current.innerHTML;
+  
+  // Find and update the corresponding block in our temporary div
+  const blocks = tempDiv.childNodes;
+  let targetBlock = null;
+  let targetIndex = -1;
+  
+  for (let i = 0; i < blocks.length; i++) {
+    if (blocks[i].textContent === content) {
+      targetBlock = blocks[i];
+      targetIndex = i;
+      break;
+    }
+  }
+  
+  if (!targetBlock) return;
+  
+  // Create the new element based on the action
+  let newElement;
+  switch (action) {
+    case 'h1':
+    case 'h2':
+    case 'h3':
+    case 'h4':
+    case 'h5':
+      newElement = document.createElement(action);
+      newElement.textContent = newContent;
+      break;
+    case 'blockquote':
+      newElement = document.createElement('blockquote');
+      newElement.textContent = newContent;
+      break;
+    case 'list': {
+      const listDiv = document.createElement('div');
+      listDiv.innerHTML = `<ul><li>${newContent}</li></ul>`;
+      newElement = listDiv.firstChild;
+      break;
+    }
+    case 'task': {
+      const taskDiv = document.createElement('div');
+      taskDiv.innerHTML = `<div><input type="checkbox"> ${newContent}</div>`;
+      newElement = taskDiv.firstChild;
+      break;
+    }
+    case 'image': {
+      newElement = document.createElement('div');
+      newElement.className = 'image-placeholder';
+      newElement.textContent = '[Image]';
+      break;
+    }
+    case 'gallery': {
+      newElement = document.createElement('div');
+      newElement.className = 'gallery-placeholder';
+      newElement.textContent = '[Image Gallery]';
+      break;
+    }
+    case 'hr':
+      newElement = document.createElement('hr');
+      break;
+    default:
+      return;
+  }
+  
+  // Replace the old block
+  blocks[targetIndex].replaceWith(newElement);
+  
+  // Update the editor's content through React
+  if (onContentChange) {
+    onContentChange(pageIndex, tempDiv.innerHTML, editorRef.current);
+  }
+  
+  // Close the menu
+  handleCloseSlashCommandMenu();
+  
+  // Set cursor position after React updates the DOM
+  requestAnimationFrame(() => {
+    const selection = window.getSelection();
+    const range = document.createRange();
+    
+    // Find the newly created element
+    const newBlocks = editorRef.current.childNodes;
+    let newTargetBlock = newBlocks[targetIndex];
+    
+    if (newTargetBlock) {
+      range.selectNodeContents(newTargetBlock);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  });
+};
+
+const handleContextMenuAction = (action, capturedText) => {
+  // Close the context menu
+  setContextMenu({ ...contextMenu, visible: false });
+  
+  if (action === 'addStickyNote') {
+    // Calculate position relative to the editor element
+    const editorRect = editorRef.current.getBoundingClientRect();
+    const selectionRect = window.getSelection().getRangeAt(0).getBoundingClientRect();
+    
+    const stickyNotePosition = {
+      top: selectionRect.top - editorRect.top,
+      left: selectionRect.right - editorRect.left
     };
     
-    // Store the exact HTML content of the selected range for later restoration if needed
-    const tempDiv = document.createElement('div');
-    tempDiv.appendChild(range.cloneContents());
-    const exactSelectedHTML = tempDiv.innerHTML;
+    // Add sticky note
+    setStickyNotes(prev => [
+      ...prev,
+      {
+        id: Date.now(),
+        text: '',
+        position: stickyNotePosition,
+        isEditing: true
+      }
+    ]);
+  }
+};
+    // Replace the old block
+    blocks[targetIndex].replaceWith(newElement);
     
-    setAiSidebar({
-      visible: true,
-      activeAction: action,
-      processedText: '',
-      isLoading: false,
-      selectedText: textToProcess,
-      previewActive: false,
-      previewRange: rangeInfo,
-      originalHTML: exactSelectedHTML
+    // Update the editor's content through React
+    if (onContentChange) {
+      onContentChange(pageIndex, tempDiv.innerHTML, editorRef.current);
+    }
+    
+    // Close the menu
+    handleCloseSlashCommandMenu();
+    
+    // Set cursor position after React updates the DOM
+    requestAnimationFrame(() => {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      
+      // Find the newly created element
+      const newBlocks = editorRef.current.childNodes;
+      let newTargetBlock = newBlocks[targetIndex];
+      
+      if (newTargetBlock) {
+                range.selectNodeContents(newTargetBlock);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
     });
   };
 
-  // Handle generate request from sidebar
   const handleGenerateRequest = async (customInstructions, tone) => {
     const { selectedText, activeAction, previewRange } = aiSidebar;
-    
-    // Set loading state
-    setAiSidebar(prev => ({
-      ...prev,
-      isLoading: true
-    }));
-    
-    try {
-      // Process the text with Gemini API including custom instructions and tone
-      const result = await processWithGemini(
-        selectedText, 
-        activeAction, 
-        customInstructions, 
-        tone
-      );
-      
-      // Update the sidebar with the processed text
-      setAiSidebar(prev => ({
-        ...prev,
-        processedText: result,
-        isLoading: false
-      }));
-      
-      // Apply the preview to the editor content
-      applyPreview(result);
-    } catch (error) {
-      console.error('Error processing text:', error);
-      
-      // Update the sidebar with the error
-      setAiSidebar(prev => ({
-        ...prev,
-        processedText: `Error: ${error.message}`,
-        isLoading: false
-      }));
-    }
-  };
-
-  // Apply the AI-generated text as a preview in the editor
-  const applyPreview = (processedText) => {
-    const { previewRange, selectedText, originalHTML } = aiSidebar;
-    
-    if (!previewRange || !processedText) return;
-    
-    try {
-      // For multi-line text, we'll use the stored range directly instead of trying to find the text
-      // This is more reliable for complex selections
-      const editorContent = editorRef.current;
-      if (!editorContent) return;
-      
-      // Check if the original containers are still in the document
-      let startNode = previewRange.startContainer;
-      let endNode = previewRange.endContainer;
-      let startOffset = previewRange.startOffset;
-      let endOffset = previewRange.endOffset;
-      let parentElement = previewRange.parentElement;
-      
-      // If the nodes aren't in the document anymore, we need to find the text
-      if (!document.contains(startNode) || !document.contains(endNode)) {
-        console.log('Stored range nodes are no longer in the document, searching for text');
-        
-        // For multi-line text, we need a more sophisticated approach
-        // We'll normalize the text by removing extra whitespace for comparison
-        const normalizedSelectedText = selectedText.replace(/\s+/g, ' ').trim();
-        
-        // Function to get text content of a node and its children
-        const getTextContent = (node) => {
-          if (node.nodeType === Node.TEXT_NODE) {
-            return node.nodeValue;
-          }
-          
-          let text = '';
-          const childNodes = node.childNodes;
-          for (let i = 0; i < childNodes.length; i++) {
-            text += getTextContent(childNodes[i]);
-          }
-          return text;
-        };
-        
-        // Function to find a text match in the editor
-        const findTextInEditor = () => {
-          // First try exact match with TreeWalker
-          const walker = document.createTreeWalker(
-            editorContent,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-          );
-          
-          let currentNode;
-          let textBuffer = '';
-          let startTextNode = null;
-          let endTextNode = null;
-          let startPos = 0;
-          let endPos = 0;
-          
-          // For multi-line text, we need to accumulate text across nodes
-          const textNodes = [];
-          while (currentNode = walker.nextNode()) {
-            textNodes.push({
-              node: currentNode,
-              text: currentNode.nodeValue
-            });
-          }
-          
-          // Try to find the text in consecutive text nodes
-          for (let i = 0; i < textNodes.length; i++) {
-            let accumulatedText = '';
-            let nodeStart = i;
-            
-            // Accumulate text until we have enough to compare
-            for (let j = i; j < textNodes.length; j++) {
-              accumulatedText += textNodes[j].text;
-              
-              // Normalize for comparison
-              const normalizedText = accumulatedText.replace(/\s+/g, ' ').trim();
-              
-              // Check if we have a match
-              if (normalizedText.includes(normalizedSelectedText)) {
-                // Found a match!
-                const matchIndex = normalizedText.indexOf(normalizedSelectedText);
-                
-                // Now we need to map this back to the original nodes
-                let charCount = 0;
-                let startNodeIndex = nodeStart;
-                let startCharIndex = 0;
-                
-                // Find start node and offset
-                for (let k = nodeStart; k <= j; k++) {
-                  const nodeText = textNodes[k].text;
-                  if (charCount + nodeText.length > matchIndex) {
-                    // This node contains the start of our match
-                    startNodeIndex = k;
-                    startCharIndex = matchIndex - charCount;
-                    break;
-                  }
-                  charCount += nodeText.length;
-                }
-                
-                // Find end node and offset
-                let endNodeIndex = j;
-                let endCharIndex = 0;
-                charCount = 0;
-                
-                for (let k = nodeStart; k <= j; k++) {
-                  const nodeText = textNodes[k].text;
-                  if (charCount + nodeText.length >= matchIndex + normalizedSelectedText.length) {
-                    // This node contains the end of our match
-                    endNodeIndex = k;
-                    endCharIndex = matchIndex + normalizedSelectedText.length - charCount;
-                    if (endCharIndex > nodeText.length) endCharIndex = nodeText.length;
-                    break;
-                  }
-                  charCount += nodeText.length;
-                }
-                
-                // Set our nodes and offsets
-                startNode = textNodes[startNodeIndex].node;
-                startOffset = startCharIndex;
-                endNode = textNodes[endNodeIndex].node;
-                endOffset = endCharIndex;
-                return true;
-              }
-            }
-          }
-          
-          return false;
-        };
-        
-        // Try to find the text
-        const found = findTextInEditor();
-        
-        if (!found) {
-          console.error('Could not find the selected text in the document');
-          return;
-        }
-      }
-      
-      // Create a range with our nodes
-      const range = document.createRange();
-      range.setStart(startNode, startOffset);
-      range.setEnd(endNode, endOffset);
-      
-      // Store the original content for restoration
-      const originalContent = range.toString();
-      console.log('Selected text:', originalContent);
-      
-      // Delete the selected content
-      range.deleteContents();
-      
-      // Create a span element for the preview with special styling
-      const previewSpan = document.createElement('span');
-      previewSpan.className = 'ai-preview-text';
-      previewSpan.textContent = processedText;
-      previewSpan.dataset.aiGenerated = 'true';
-      previewSpan.dataset.originalText = selectedText; // Store original text for restoration
-      previewSpan.id = 'ai-preview-' + Date.now();
-      
-      // Insert the preview span
-      range.insertNode(previewSpan);
-      
-      // Update the content to ensure changes are saved
-      onContentChange(editorRef.current.innerHTML, pageIndex);
-      
-      // Update the sidebar state to indicate preview is active
-      setAiSidebar(prev => ({
-        ...prev,
-        previewActive: true
-      }));
-      
-      // Position and show the popover after a short delay to ensure the DOM is updated
-      setTimeout(() => {
-        const previewElement = document.getElementById(previewSpan.id);
-        if (previewElement) {
-          const rect = previewElement.getBoundingClientRect();
-          setAiPopover({
-            visible: true,
-            position: {
-              top: rect.top,
-              left: rect.left,
-              width: rect.width
-            }
-          });
-        }
-      }, 100);
-    } catch (error) {
-      console.error('Error applying preview:', error);
-    }
-  };
-
-  // Handle approving the AI changes
-  const handleApproveChanges = () => {
-    // Find the preview element
-    const previewElement = editorRef.current.querySelector('.ai-preview-text');
-    
-    if (previewElement) {
-      // Get the approved text
-      const approvedText = previewElement.textContent;
-      
-      // Replace the preview element with a regular text node (no special styling)
-      const textNode = document.createTextNode(approvedText);
-      previewElement.parentNode.replaceChild(textNode, previewElement);
-      
-      // Update the content state to save the changes
-      onContentChange(editorRef.current.innerHTML, pageIndex);
-      
-      console.log('AI changes approved and applied:', approvedText);
-    } else {
-      console.error('No preview element found to approve changes');
-    }
-    
-    // Hide the popover
-    setAiPopover({ visible: false, position: null });
-    
-    // Close the AI sidebar
-    setAiSidebar({
-      visible: false,
-      activeAction: null,
-      processedText: '',
-      isLoading: false,
-      selectedText: '',
-      previewActive: false,
-      previewRange: null
-    });
-  };
-
-  // Handle regenerating the AI content
-  const handleRegenerate = () => {
-    // Remove the current preview
-    const previewElement = editorRef.current.querySelector('.ai-preview-text');
-    
-    if (previewElement) {
-      // Get the original text if available, otherwise use the selected text
-      const originalText = previewElement.dataset.originalText || aiSidebar.selectedText;
       
       // Replace the preview with the original text
       const textNode = document.createTextNode(originalText);

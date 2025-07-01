@@ -30,22 +30,19 @@ const ChaptersSidebar = ({
         .filter(id => !currentChapterIds.includes(id))
         .map(id => ({ id, name: `Chapter ${id}` })); // Default name if not stored
 
-      setChapters(prevChapters => {
-        const updatedChapters = [...prevChapters];
-        newChaptersList.forEach(newChap => {
-          if (!updatedChapters.some(c => c.id === newChap.id)) {
-            updatedChapters.push(newChap);
-          }
+      if (newChaptersList.length > 0) {
+        setChapters(prevChapters => {
+          const updatedChapters = [...prevChapters, ...newChaptersList];
+          return updatedChapters.sort((a, b) => a.id - b.id);
         });
-        return updatedChapters.sort((a, b) => a.id - b.id);
-      });
+      }
     }
-  }, [chaptersContent, setChaptersContent, setActiveChapterId, chapters]);
+  }, [chaptersContent, setChaptersContent, setActiveChapterId]);
 
   const handleAddChapter = () => {
     const newId = chapters.length > 0 ? Math.max(...chapters.map(c => c.id)) + 1 : 1;
     const newChapter = { id: newId, name: `Chapter ${newId}` };
-    setChapters([...chapters, newChapter].sort((a, b) => a.id - b.id));
+    setChapters(prevChapters => [...prevChapters, newChapter].sort((a, b) => a.id - b.id));
     setChaptersContent(prev => ({ ...prev, [newId]: [{ content: '' }] }));
     setActiveChapterId(newId);
   };

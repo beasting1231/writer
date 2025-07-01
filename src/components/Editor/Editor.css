@@ -53,6 +53,49 @@
   text-decoration: underline;
 }
 
+/* Heading styles */
+.editor h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 1.5rem 0 1rem;
+  line-height: 1.2;
+  color: #ffffff;
+}
+
+.editor h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 1.4rem 0 0.9rem;
+  line-height: 1.25;
+  color: #ffffff;
+}
+
+.editor h3 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 1.3rem 0 0.8rem;
+  line-height: 1.3;
+  color: #ffffff;
+}
+
+.editor h4 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1.2rem 0 0.7rem;
+  line-height: 1.35;
+  color: #ffffff;
+}
+
+.editor h5 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1.1rem 0 0.6rem;
+  line-height: 1.4;
+  color: #ffffff;
+}
+
+
+
 /* Editor container */
 .editor-container {
   width: calc(100% - 120px); /* Prevent horizontal scrolling by limiting width */
@@ -176,4 +219,12 @@
 .editor > ul:last-child,
 .editor > ol:last-child {
   margin-bottom: 0;
+}
+
+/* Horizontal rule - subtle grey line */
+.editor hr {
+  border: 0;
+  border-top: 1px solid #444;
+  height: 0;
+  margin: 1.5rem 0;
 }
