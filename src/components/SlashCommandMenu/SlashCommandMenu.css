@@ -15,6 +15,7 @@
   padding: 6px;
   z-index: 1000;
   transition: all 0.2s ease;
+  outline: none; /* Remove focus outline since we use custom styling */
 }
 
 .slash-command-heading-row {
@@ -42,6 +43,12 @@
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+.slash-command-heading-item.selected {
+  background: linear-gradient(135deg, rgba(80, 80, 80, 0.8), rgba(60, 60, 60, 0.8));
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
 .slash-command-heading-item .material-symbols-outlined {
   font-size: 14px;
 }
@@ -62,6 +69,11 @@
 
 .slash-command-item:hover {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.slash-command-item.selected {
+  background-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 .slash-command-icon {

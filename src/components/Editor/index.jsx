@@ -318,29 +318,218 @@ const updateActivePlaceholder = useCallback(() => {
     });
   }, []);
   
+  // Check if cursor is at the beginning of a list item or task item
+  const isAtListItemStart = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return false;
+    
+    const range = selection.getRangeAt(0);
+    if (!range.collapsed) return false; // Only check when cursor is not selecting text
+    
+    let node = range.startContainer;
+    let offset = range.startOffset;
+    
+    // If we're in a text node
+    if (node.nodeType === Node.TEXT_NODE) {
+      // If we're not at the beginning of the text node, we're not at the start of a list item
+      if (offset > 0) return false;
+      
+      // Get the parent element
+      const parentElement = node.parentNode;
+      
+      // Check if we're in a task item or list item
+      let isTaskItem = false;
+      let isList = false;
+      let listItemNode = null;
+      let currentNode = parentElement;
+      
+      // Traverse up to find if we're in a task item or list item
+      while (currentNode && currentNode !== editorRef.current) {
+        if (currentNode.nodeName === 'LI') {
+          if (currentNode.classList && currentNode.classList.contains('task-item')) {
+            isTaskItem = true;
+          }
+          isList = true;
+          listItemNode = currentNode;
+          break;
+        }
+        currentNode = currentNode.parentNode;
+      }
+      
+      if (!(isTaskItem || isList)) return false;
+      
+      // Check if we're at the first text position in the list item
+      // For task items, this means after the checkbox
+      // For regular list items, this means at the beginning of the text content
+      
+      // Find the first text node in the list item
+      const findFirstTextPosition = (element) => {
+        if (element.nodeType === Node.TEXT_NODE) return element;
+        
+        if (element.childNodes.length === 0) return null;
+        
+        for (let i = 0; i < element.childNodes.length; i++) {
+          const child = element.childNodes[i];
+          
+          // Skip checkboxes and other non-text elements at the beginning
+          if (child.nodeName === 'INPUT' || 
+              (child.nodeType !== Node.TEXT_NODE && i === 0)) {
+            continue;
+          }
+          
+          if (child.nodeType === Node.TEXT_NODE) return child;
+          
+          const textNode = findFirstTextPosition(child);
+          if (textNode) return textNode;
+        }
+        
+        return null;
+      };
+      
+      const firstTextNode = findFirstTextPosition(listItemNode);
+      
+      // If we're at the first text node and at its beginning, we're at the start of the list item
+      return firstTextNode === node && offset === 0;
+    }
+    
+    return false;
+  }, []);
+
+  // Handle beforeinput event to prevent typing to the left of list items and task items
+  const handleBeforeInput = useCallback((e) => {
+    if (isAtListItemStart()) {
+      // If we're at the beginning of a list item or task item, prevent typing
+      e.preventDefault();
+    }
+  }, [isAtListItemStart]);
+  
   // Handle keydown events
   const handleKeyDown = useCallback((e) => {
-    // Close the slash command menu when pressing Enter/Return
-    if ((e.key === 'Enter' || e.key === 'Return') && slashCommandMenu.visible) {
+    // If slash command menu is visible, let it handle its own keyboard navigation
+    if (slashCommandMenu.visible) {
+      // Only prevent default and stop propagation for arrow keys and Enter to allow menu navigation
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Return', 'Escape'].includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      
+      // Close the slash command menu when typing any character except for navigation keys, shift, ctrl, etc.
+      if (e.key !== 'Shift' && e.key !== 'Control' && e.key !== 'Alt' && 
+          e.key !== 'Meta' && e.key !== 'CapsLock' && e.key !== 'Tab' &&
+          !e.ctrlKey && !e.metaKey && !e.altKey) {
+        setSlashCommandMenu({
+          visible: false,
+          position: slashCommandMenu.position
+        });
+        // Don't prevent default here so the character gets typed
+      }
+    }
+    
+    // The slash command menu now handles its own keyboard events
+    
+    // Prevent cursor from moving to the left of task items and list items
+    if (e.key === 'ArrowLeft' && isAtListItemStart()) {
       e.preventDefault();
-      setSlashCommandMenu({
-        visible: false,
-        position: slashCommandMenu.position
-      });
       return;
     }
     
-    // Close the slash command menu when typing any character except for arrow keys, shift, ctrl, etc.
-    if (slashCommandMenu.visible && 
-        e.key.length === 1 && // Single character keys (letters, numbers, symbols)
-        !e.ctrlKey && !e.metaKey && !e.altKey) {
-      setSlashCommandMenu({
-        visible: false,
-        position: slashCommandMenu.position
-      });
-      // Don't prevent default here so the character gets typed
+    // Handle Enter inside task items with verbose logging
+    if ((e.key === 'Enter' || e.key === 'Return') && !slashCommandMenu.visible) {
+      console.log('[TaskEnter] Enter pressed - starting handler');
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+
+      const range = selection.getRangeAt(0);
+      let node = range.startContainer;
+      console.log('[TaskEnter] Initial node', node.nodeName, node.nodeType);
+
+      // If text node, get parent
+      if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+
+      // Traverse up to find <li class="task-item">
+      while (node && node !== editorRef.current && !(node.nodeName === 'LI' && node.classList && node.classList.contains('task-item'))) {
+        node = node.parentNode;
+      }
+
+      if (!(node && node.nodeName === 'LI' && node.classList.contains('task-item'))) {
+        // Not inside a task item -> let default behaviour run
+        return;
+      }
+
+      console.log('[TaskEnter] Found task item:', node);
+      e.preventDefault();
+      // Suppress downstream selection / placeholder reactions
+      isUpdatingRef.current = true;
+
+      const taskItem = node;
+      const contentSpan = taskItem.querySelector('span');
+      const rawText = contentSpan ? contentSpan.innerText : '';
+      const text = rawText.replace(/\u200B/g, '').trim();
+      console.log('[TaskEnter] Task text:', text);
+
+      if (text === '') {
+        // Empty task item: turn into regular paragraph
+        const taskList = taskItem.parentNode;
+        const p = document.createElement('p');
+        p.innerHTML = '<br>';
+        taskList.parentNode.insertBefore(p, taskItem.nextSibling);
+        taskItem.remove();
+
+        // If the list became empty after removal, remove the list container
+        if (!taskList.firstChild) {
+          taskList.remove();
+        }
+
+        // Place caret in the new paragraph
+        const newRange = document.createRange();
+        newRange.setStart(p, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      } else {
+        // ----- NON-EMPTY: create a new task item below -----
+        console.log('[TaskEnter] Inserting new task item');
+
+        const newLi = document.createElement('li');
+        newLi.classList.add('task-item');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.contentEditable = false;
+        checkbox.classList.add('task-checkbox');
+
+        const span = document.createElement('span');
+        const emptyText = document.createTextNode('\u200B');
+        span.appendChild(emptyText);
+
+        newLi.appendChild(checkbox);
+        newLi.appendChild(span);
+
+        if (taskItem.nextSibling) {
+          taskItem.parentNode.insertBefore(newLi, taskItem.nextSibling);
+        } else {
+          taskItem.parentNode.appendChild(newLi);
+        }
+
+        // Move caret
+        const newRange = document.createRange();
+        newRange.setStart(span, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      }
+
+      // Refresh placeholders & notify change
+      updateActivePlaceholder();
+      if (onContentChange) {
+        onContentChange({ type: 'task-enter' }, editorRef.current.innerHTML);
+      }
+
+      isUpdatingRef.current = false;
+      return;
     }
-    
+
     // Open the slash command menu when typing '/' at the beginning of a line
     if (e.key === '/' && !slashCommandMenu.visible) {
       // Get the current selection
@@ -893,6 +1082,7 @@ const updateActivePlaceholder = useCallback(() => {
         selection.addRange(range);
         break;
         
+      case 'list':
       case 'bullet-list':
         // Insert a bullet list
         const ul = document.createElement('ul');
@@ -909,6 +1099,38 @@ const updateActivePlaceholder = useCallback(() => {
         selection.addRange(range);
         break;
         
+      case 'task':
+        // Insert a task list (checkbox list)
+        const taskUl = document.createElement('ul');
+        taskUl.classList.add('task-list');
+        const taskLi = document.createElement('li');
+        taskLi.classList.add('task-item');
+
+        // Create a checkbox input (disabled so it doesn't interfere with typing)
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        // Allow user to toggle the checkbox
+        checkbox.contentEditable = false;
+        checkbox.classList.add('task-checkbox');
+
+        // Create a span to hold the editable text with a placeholder
+        const taskSpan = document.createElement('span');
+        taskSpan.setAttribute('data-placeholder', 'Task item');
+        taskSpan.innerHTML = '<br>';
+
+        // Assemble the task list item
+        taskLi.appendChild(checkbox);
+        taskLi.appendChild(taskSpan);
+        taskUl.appendChild(taskLi);
+        range.insertNode(taskUl);
+
+        // Move cursor inside the span so typing begins after the checkbox
+        range.selectNodeContents(taskSpan);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        break;
+
       case 'numbered-list':
         // Insert a numbered list
         const ol = document.createElement('ol');
@@ -972,6 +1194,27 @@ const updateActivePlaceholder = useCallback(() => {
       onContentChange({ type: 'slashCommand', action }, editorRef.current.innerHTML);
     }
   }, [handleCloseSlashCommandMenu, restoreSelection, onContentChange]);
+
+  // Persist checkbox checked attribute to HTML so switching chapters keeps state
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const handleCheckboxChange = (e) => {
+      const target = e.target;
+      if (target && target.classList && target.classList.contains('task-checkbox')) {
+        if (target.checked) {
+          target.setAttribute('checked', '');
+        } else {
+          target.removeAttribute('checked');
+        }
+        if (onContentChange) {
+          onContentChange({ type: 'task-checkbox' }, editor.innerHTML);
+        }
+      }
+    };
+    editor.addEventListener('change', handleCheckboxChange);
+    return () => editor.removeEventListener('change', handleCheckboxChange);
+  }, [onContentChange]);
 
   // Sync content from props
   useEffect(() => {
@@ -1092,6 +1335,7 @@ const updateActivePlaceholder = useCallback(() => {
         onInput={handleInput}
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
+        onBeforeInput={handleBeforeInput}
         onContextMenu={handleContextMenu}
         onClick={() => {
           console.log('Editor clicked, updating placeholder');
