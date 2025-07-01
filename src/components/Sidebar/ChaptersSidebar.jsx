@@ -19,7 +19,7 @@ const ChaptersSidebar = ({
   useEffect(() => {
     if (Object.keys(chaptersContent).length === 0) {
       setChapters([{ id: 1, name: 'Introduction' }]);
-      setChaptersContent({ 1: [{ content: '' }] });
+      setChaptersContent({ 1: '' });
       setActiveChapterId(1);
     } else {
       // Ensure chapters state reflects the keys in chaptersContent
@@ -43,7 +43,7 @@ const ChaptersSidebar = ({
     const newId = chapters.length > 0 ? Math.max(...chapters.map(c => c.id)) + 1 : 1;
     const newChapter = { id: newId, name: `Chapter ${newId}` };
     setChapters(prevChapters => [...prevChapters, newChapter].sort((a, b) => a.id - b.id));
-    setChaptersContent(prev => ({ ...prev, [newId]: [{ content: '' }] }));
+    setChaptersContent(prev => ({ ...prev, [newId]: '' }));
     setActiveChapterId(newId);
   };
 

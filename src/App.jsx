@@ -4,8 +4,7 @@ import WordCount from './components/WordCount';
 import { ChaptersSidebar, SidebarToggle } from './components/Sidebar';
 
 function App() {
-  const [content, setContent] = useState('');
-  const [chaptersContent, setChaptersContent] = useState({});
+  const [chaptersContent, setChaptersContent] = useState({ 1: '' });
   const [activeChapterId, setActiveChapterId] = useState(1);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const editorRef = useRef(null);
@@ -25,8 +24,8 @@ function App() {
   }, []);
 
   const handleContentChange = useCallback((_, newContent) => {
-    setContent(newContent);
-  }, []);
+    setChaptersContent(prev => ({ ...prev, [activeChapterId]: newContent }));
+  }, [activeChapterId]);
 
   // Editor command functionality removed
 
@@ -39,20 +38,31 @@ function App() {
     }
   }, []);
 
-  // Use the content directly for word count
-  const totalContent = useMemo(() => {
-    return content;
-  }, [content]);
+    // Derive current chapter content
+  const currentContent = chaptersContent[activeChapterId] || '';
+
+  // Word count for the active chapter
+  const totalContent = useMemo(() => currentContent, [currentContent]);
+
+  // Helper to switch chapters while saving current editor content
+  const handleSetActiveChapterId = useCallback((newId) => {
+    if (newId === activeChapterId) return;
+    if (editorRef.current && editorRef.current.getContent) {
+      const currentHtml = editorRef.current.getContent();
+      setChaptersContent(prev => ({ ...prev, [activeChapterId]: currentHtml }));
+    }
+    setActiveChapterId(newId);
+  }, [activeChapterId]);
 
   return (
     <div className="flex h-screen bg-black text-white overflow-hidden">
       {/* Chapters sidebar */}
-      <ChaptersSidebar 
+        <ChaptersSidebar 
         isOpen={sidebarOpen}
         chaptersContent={chaptersContent}
         setChaptersContent={setChaptersContent}
         activeChapterId={activeChapterId}
-        setActiveChapterId={setActiveChapterId}
+        setActiveChapterId={handleSetActiveChapterId}
       />
       
       {/* Sidebar toggle button */}
@@ -69,7 +79,8 @@ function App() {
           <div className="canvas-container max-w-full">
             <Editor
               ref={editorRef}
-              content={content}
+              content={currentContent}
+              chapterId={activeChapterId}
               pageIndex={0}
               onContentChange={handleContentChange}
               onEditorFocus={handleFocus}

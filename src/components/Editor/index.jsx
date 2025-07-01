@@ -10,7 +10,7 @@ import { normalizeHTML } from '../../utils/domUtils';
 /**
  * Main Editor component that integrates all editor functionality
  */
-const Editor = forwardRef(({ content, onContentChange, pageIndex, onEditorFocus, isLocked = false }, ref) => {
+const Editor = forwardRef(({ content, chapterId, onContentChange, pageIndex, onEditorFocus, isLocked = false }, ref) => {
   // Refs
   const editorRef = useRef(null);
   const isUpdatingRef = useRef(false);
@@ -989,13 +989,13 @@ const updateActivePlaceholder = useCallback(() => {
         isUpdatingRef.current = true;
 
         saveSelection();
-        editorRef.current.innerHTML = content || '';
+        editorRef.current.innerHTML = content || '<p><br></p>';
         restoreSelection();
         updateActivePlaceholder();
         // The flag is now left `true` and will be reset by `handleSelectionChange`.
       }
     }
-  }, [content, saveSelection, restoreSelection, updateActivePlaceholder]);
+  }, [content, chapterId, saveSelection, restoreSelection, updateActivePlaceholder]);
 
   // Set up selection change listener
   useEffect(() => {
@@ -1074,6 +1074,9 @@ const updateActivePlaceholder = useCallback(() => {
 
   // Expose methods to parent components
   useImperativeHandle(ref, () => ({
+    getContent: () => {
+      return editorRef.current ? editorRef.current.innerHTML : '';
+    },
     proofreadChapter: () => {
       console.log('Proofreading chapter...');
       // This is a placeholder for the actual proofreading functionality
